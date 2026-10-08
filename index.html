@@ -1,0 +1,1292 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<meta name="color-scheme" content="light">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Rutas">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon-64.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>GnvRuteHelper</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+/* ============================================================
+   1. COLORES Y MEDIDAS
+   ============================================================ */
+:root{
+  --bg:#EDF0F4; --surface:#FFFFFF; --sunken:#F4F6F9; --line:#E3E7ED; --line-2:#CBD2DC;
+  --ink:#121620; --ink-2:#4A5466; --ink-3:#5E6879;
+  --accent:#1656CC; --accent-2:#1859D6; --accent-press:#1249AE; --accent-soft:#E8F0FD; --accent-ink:#0D3C91; --on-accent-2:#E4EDFF;
+  --ok:#14794A; --ok-soft:#E3F3EA;
+  --warn:#965800; --warn-soft:#FFF3D9; --warn-line:#F0C674; --warn-ink:#573400;
+  --danger:#B42318;
+  --r-sm:10px; --r:14px; --r-lg:20px;
+  --tap:52px;
+  --ease-out:cubic-bezier(.23,1,.32,1);
+  --ease-drawer:cubic-bezier(.32,.72,0,1);
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --sh-1:0 1px 2px rgba(16,24,40,.05),0 2px 6px rgba(16,24,40,.06);
+  --sh-2:0 2px 4px rgba(16,24,40,.05),0 10px 24px rgba(16,24,40,.08);
+  --sh-hero:0 4px 8px rgba(16,24,40,.08),0 18px 32px -14px rgba(16,24,40,.45);
+  --sh-pop:0 4px 10px rgba(16,24,40,.10),0 18px 40px rgba(16,24,40,.18);
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;overscroll-behavior:none}
+html{touch-action:manipulation}                 /* sin zoom con doble toque */
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:17px;line-height:1.4;
+  -webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;text-size-adjust:100%}
+::selection{background:var(--accent-soft);color:var(--accent-ink)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent-2);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.ico{width:22px;height:22px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* ============================================================
+   2. ESTRUCTURA
+   ============================================================ */
+.app{position:fixed;inset:0;display:flex;flex-direction:column}
+.top{background:var(--surface);padding:calc(10px + env(safe-area-inset-top,0px)) calc(12px + env(safe-area-inset-right,0px)) 10px calc(16px + env(safe-area-inset-left,0px));display:flex;align-items:center;gap:8px;position:relative;z-index:1000;box-shadow:0 1px 0 var(--line)}
+.top .title{flex:1;min-width:0}
+.top h1{font-size:17px;font-weight:700;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.01em}
+.top .sub{font-size:14px;color:var(--ink-3)}
+.body{flex:1;min-height:0;position:relative}
+.pane{position:absolute;inset:0}
+.list-pane{overflow-y:auto;overscroll-behavior:contain;padding:14px 14px 32px;-webkit-overflow-scrolling:touch}
+.map-pane{background:#E5E9EF}
+#map{position:absolute;inset:0}
+.app[data-view="list"] .map-pane{visibility:hidden}
+.app[data-view="map"] .list-pane{visibility:hidden}
+.tabs{display:flex;background:var(--surface);box-shadow:0 -1px 0 var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabs button{flex:1;height:56px;border:0;background:none;display:flex;align-items:center;justify-content:center;gap:8px;color:var(--ink-3);font-weight:600;font-size:16px;cursor:pointer}
+.tabs button[aria-selected="true"]{color:var(--accent)}
+@media (min-width:880px){
+  .body{display:grid;grid-template-columns:minmax(380px,460px) 1fr}
+  .pane{position:relative;inset:auto}
+  .list-pane{height:100%;padding:18px 18px calc(32px + env(safe-area-inset-bottom,0px))}
+  .app .map-pane,.app .list-pane{visibility:visible!important}
+  .tabs{display:none}
+}
+
+/* ============================================================
+   3. BOTONES
+   ============================================================ */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:var(--tap);padding:0 18px;border-radius:var(--r-sm);
+  border:0;background:var(--sunken);font-weight:650;font-size:16px;cursor:pointer;text-decoration:none;color:var(--ink);white-space:nowrap;
+  transition:transform .12s var(--ease-out),background-color .15s ease;user-select:none;-webkit-user-select:none}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.primary:active{background:var(--accent-press)}
+.btn.line{background:var(--surface);box-shadow:inset 0 0 0 1px var(--line-2)}
+.btn.ghost{background:transparent}
+.btn.small{min-height:44px;padding:0 14px;font-size:15px}
+.btn.icon{width:44px;min-height:44px;padding:0;border-radius:22px;background:transparent}
+.btn[disabled]{opacity:.55;pointer-events:none}
+@media (hover:hover){.btn:hover{background:#E7EBF1}.btn.primary:hover{background:var(--accent-press)}.btn.icon:hover,.btn.ghost:hover{background:var(--sunken)}}
+#btnRecalc{background:var(--accent-soft);color:var(--accent-ink)}
+@media (max-width:600px){#btnRecalc span{display:none}#btnRecalc{width:44px;padding:0;border-radius:22px}}
+
+/* ============================================================
+   4. PANEL "SIGUIENTE" (lo más importante de la pantalla)
+   ============================================================ */
+.hero{background:var(--accent-2);color:#fff;border-radius:var(--r-lg);box-shadow:var(--sh-hero);padding:18px 18px 16px;margin-bottom:22px;position:relative;overflow:hidden}
+.hero .meta{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:650;color:var(--on-accent-2)}
+.hero .pill{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;padding:0 8px;border-radius:14px;background:#fff;color:var(--accent);font-size:14px;font-weight:800}
+.hero .tap{display:block;width:100%;text-align:left;background:none;border:0;color:inherit;padding:0;cursor:pointer}
+.hero h2{font-size:28px;line-height:1.15;font-weight:750;margin:10px 0 4px;letter-spacing:-.02em;text-wrap:balance}
+.hero .addr{color:var(--on-accent-2);font-size:16px}
+.hero .walk{display:flex;align-items:center;gap:6px;margin-top:10px;font-size:16px;font-weight:600}
+.hero .walk span{color:var(--on-accent-2);font-weight:500}
+.hero .walk .ico{width:19px;height:19px}
+.hero .notes{background:var(--warn-soft);color:var(--warn-ink);border-radius:var(--r-sm);padding:10px 12px;margin-top:14px;font-size:15px;display:flex;gap:10px}
+.hero .notes .ico{width:19px;height:19px;color:var(--warn);margin-top:1px}
+.hero .notes p{margin:0}
+.hero .notes p + p{margin-top:6px}
+.hero .notes small{color:var(--warn);font-size:13px}
+.hero .actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
+.hero .actions .go{grid-column:1/-1;background:#fff;color:var(--accent);font-size:18px;min-height:56px;box-shadow:0 1px 2px rgba(16,24,40,.12)}
+.hero .actions .go:active{background:#EEF3FD}
+.hero .actions .soft{background:rgba(255,255,255,.16);color:#fff}
+.hero .actions .soft:active{background:rgba(255,255,255,.26)}
+@media (hover:hover){.hero .actions .soft:hover{background:rgba(255,255,255,.24)}.hero .actions .go:hover{background:#F2F6FE}}
+@media (min-width:420px){.hero .actions{grid-template-columns:1.4fr 1fr 1fr}.hero .actions .go{grid-column:auto}}
+.hero .prog{display:flex;align-items:center;gap:10px;margin-top:16px;font-size:14px;color:var(--on-accent-2)}
+.hero .prog b{color:#fff}
+.hero .prog .bar{flex:1;height:6px;border-radius:6px;background:rgba(255,255,255,.22);overflow:hidden}
+.hero .prog .bar i{display:block;height:100%;width:100%;background:#fff;border-radius:6px;transform-origin:left;transform:scaleX(0);transition:transform .5s var(--ease-out)}
+.hero.done{background:var(--ok);text-align:left}
+.swap{animation:swap .3s var(--ease-out)}
+@keyframes swap{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:none}}
+
+/* ============================================================
+   5. LISTA
+   ============================================================ */
+.sec{display:flex;align-items:baseline;justify-content:space-between;margin:22px 4px 10px}
+.sec:first-child{margin-top:4px}
+.sec h3{font-size:15px;font-weight:700;color:var(--ink);margin:0}
+.sec span{font-size:14px;color:var(--ink-3)}
+.rows{background:var(--surface);border-radius:var(--r);box-shadow:var(--sh-1);overflow:hidden}
+.row{position:relative}
+.row + .row::before{content:"";position:absolute;left:58px;right:0;top:0;height:1px;background:var(--line)}
+.row-main{width:100%;display:flex;align-items:center;gap:12px;padding:12px 10px 12px 14px;min-height:68px;background:none;border:0;text-align:left;cursor:pointer;transition:background-color .15s ease}
+.row-main:active{background:var(--sunken)}
+@media (hover:hover){.row-main:hover{background:#F8F9FB}}
+.n{flex:none;width:32px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:750;background:var(--accent-soft);color:var(--accent-ink)}
+.row .txt{flex:1;min-width:0}
+.row .name{font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .addr{font-size:14px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.row .dist{flex:none;font-size:15px;font-weight:650;color:var(--ink-2);text-align:right;line-height:1.2}
+.row .dist small{display:block;font-size:12px;font-weight:500;color:var(--ink-3);margin-top:2px}
+.row .chev{width:18px;height:18px;color:var(--line-2);margin-left:-2px}
+.row.is-done .n{background:var(--ok-soft);color:var(--ok)}
+.row.is-done .name{color:var(--ink-3)}
+.row.is-skip .n,.row.is-nogeo .n{background:var(--warn-soft);color:var(--warn)}
+.tag{display:inline-block;font-size:12px;font-weight:700;color:var(--warn);background:var(--warn-soft);border-radius:6px;padding:1px 7px;margin-left:6px;vertical-align:1px}
+.ncount{display:inline-flex;align-items:center;gap:3px;font-size:13px;font-weight:700;color:var(--warn);margin-left:6px;vertical-align:1px}
+.ncount .ico{width:15px;height:15px}
+
+/* ============================================================
+   6. FICHA DEL CLIENTE (hoja que sube desde abajo)
+   ============================================================ */
+.scrim{position:fixed;inset:0;z-index:2500;background:rgba(14,18,28,.42);opacity:0;transition:opacity .3s var(--ease-drawer)}
+.scrim.show{opacity:1}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:2600;margin:0 auto;max-width:560px;max-height:88vh;max-height:88dvh;background:var(--surface);
+  border-radius:var(--r-lg) var(--r-lg) 0 0;box-shadow:var(--sh-pop);display:flex;flex-direction:column;
+  transform:translateY(100%);transition:transform .38s var(--ease-drawer);padding-bottom:env(safe-area-inset-bottom,0px)}
+.sheet.show{transform:translateY(0)}
+.sheet.drag{transition:none}
+.grab{flex:none;padding:10px 0 4px;cursor:grab;touch-action:none}
+.grab i{display:block;width:40px;height:5px;border-radius:3px;background:var(--line-2);margin:0 auto}
+.sheet-body{overflow-y:auto;overscroll-behavior:contain;padding:6px 20px 22px}
+.sh-head{display:flex;gap:12px;align-items:flex-start}
+.sh-head .n{margin-top:3px}
+.sh-head h2{font-size:22px;line-height:1.2;margin:0;letter-spacing:-.015em;flex:1}
+.sh-head .addr{color:var(--ink-3);font-size:15px;margin-top:3px}
+.sh-head .btn.icon{margin:-6px -10px 0 0;color:var(--ink-3)}
+.quick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:20px 0 6px}
+.qa{display:flex;flex-direction:column;align-items:center;gap:7px;padding:4px 0;border:0;background:none;cursor:pointer;color:var(--accent-ink);font-size:13px;font-weight:650;text-decoration:none;text-align:center;line-height:1.2}
+.qa .c{width:52px;height:52px;border-radius:26px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;transition:transform .12s var(--ease-out),background-color .15s ease}
+.qa:active .c{transform:scale(.94)}
+.qa.main .c{background:var(--accent);color:#fff}
+.qa[aria-disabled="true"]{opacity:.4;pointer-events:none}
+.state{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+.state .btn{min-height:54px}
+.state .full{grid-column:1/-1}
+.sh-sec{font-size:13px;font-weight:700;letter-spacing:.02em;color:var(--ink-3);margin:26px 0 10px;text-transform:uppercase}
+.note{display:flex;gap:10px;align-items:flex-start;background:var(--warn-soft);color:var(--warn-ink);border-radius:var(--r-sm);padding:11px 12px;font-size:15px;margin-bottom:8px}
+.note div{flex:1}
+.note small{display:block;color:var(--warn);font-size:13px;margin-top:3px}
+.note button{border:0;background:none;color:var(--warn);cursor:pointer;padding:4px;border-radius:8px;margin:-4px -4px 0 0}
+.note-form{display:flex;gap:8px}
+.note-form .input{height:48px;font-size:16px}
+.note-form .btn{min-height:48px}
+.empty-notes{color:var(--ink-3);font-size:15px;margin:0 0 10px}
+.daypick{border:0;background:none;padding:2px 0;font:inherit;font-size:14px;color:var(--accent);font-weight:650;cursor:pointer;display:inline-flex;align-items:center;gap:2px}
+.daypick .ico{width:16px;height:16px}
+.dias{display:grid;grid-template-columns:repeat(auto-fit,minmax(56px,1fr));gap:8px;margin-top:4px}
+.dia{border:0;border-radius:var(--r-sm);background:var(--sunken);padding:10px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--ink);
+  transition:transform .12s var(--ease-out),background-color .15s ease}
+.dia:active{transform:scale(.96)}
+.dia b{font-size:15px;text-transform:capitalize}
+.dia span{font-size:13px;color:var(--ink-3)}
+.dia.sel{background:var(--accent);color:#fff}
+.dia.sel span{color:var(--on-accent-2)}
+.inline{border:0;background:none;color:inherit;font:inherit;font-weight:700;text-decoration:underline;text-underline-offset:3px;padding:0;cursor:pointer}
+.install-steps{margin:18px 0 0;padding:0;list-style:none;counter-reset:paso}
+.install-steps li{counter-increment:paso;display:flex;gap:12px;align-items:flex-start;padding:10px 0;font-size:16px}
+.install-steps li::before{content:counter(paso);flex:none;width:28px;height:28px;border-radius:14px;background:var(--accent-soft);color:var(--accent-ink);font-weight:750;font-size:14px;display:flex;align-items:center;justify-content:center}
+.install-steps .ico{width:20px;height:20px;vertical-align:-4px;color:var(--accent)}
+.pinfix{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;margin-top:24px;padding-top:16px;border-top:1px solid var(--line);font-size:14px;color:var(--ink-3);text-align:center}
+.pinfix span{grid-column:1/-1}
+.pinfix button{border:0;background:none;color:var(--accent);font-weight:650;font-size:15px;min-height:44px;padding:0 6px;cursor:pointer;border-radius:8px}
+.pinfix button:active{background:var(--accent-soft)}
+
+/* ============================================================
+   7. ESTADOS: vacío, cargando, avisos, sincronización
+   ============================================================ */
+.empty{max-width:440px;margin:6vh auto 0;text-align:center;padding:0 8px}
+.empty .icon-line{color:var(--accent);margin-bottom:12px}
+.empty .icon-line .ico{width:36px;height:36px;stroke-width:1.75}
+.empty h2{font-size:24px;margin:0 0 8px;letter-spacing:-.015em}
+.empty p{color:var(--ink-2);margin:0 0 22px}
+.empty .stack{display:grid;gap:10px}
+.empty .stack .btn:not(.primary){background:var(--surface);box-shadow:var(--sh-1)}
+.empty small{display:block;color:var(--ink-3);font-size:14px;margin-top:16px}
+.loading{background:var(--surface);border-radius:var(--r);box-shadow:var(--sh-1);padding:18px}
+.loading h2{font-size:18px;margin:0 0 4px}
+.loading p{color:var(--ink-2);font-size:15px;margin:0 0 12px}
+.bar{height:6px;background:var(--line);border-radius:6px;overflow:hidden}
+.bar i{display:block;height:100%;width:100%;background:var(--accent);border-radius:6px;transform-origin:left;transform:scaleX(0);transition:transform .5s var(--ease-out)}
+.notice{display:flex;gap:10px;align-items:flex-start;background:var(--warn-soft);color:var(--warn-ink);border-radius:var(--r);padding:12px 14px;font-size:15px;margin-bottom:12px}
+.notice .ico{color:var(--warn);margin-top:1px}
+.notice.info{background:var(--accent-soft);color:var(--accent-ink)}
+.notice.info .ico{color:var(--accent)}
+.sync{display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;color:var(--ink-3);margin:22px 2px 0}
+.sync .ico{width:18px;height:18px}
+.sync.off{color:var(--warn)}
+
+/* ============================================================
+   8. MENÚ, AVISOS FLOTANTES, ENTRADA Y MAPA
+   ============================================================ */
+.menu{position:absolute;right:12px;top:calc(100% + 6px);background:var(--surface);border-radius:var(--r);box-shadow:var(--sh-pop);
+  padding:6px;min-width:260px;transform-origin:top right;animation:pop .16s var(--ease-out)}
+@keyframes pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+.menu button{width:100%;display:flex;align-items:center;gap:12px;min-height:48px;padding:0 12px;border:0;background:none;border-radius:8px;text-align:left;cursor:pointer;font-size:16px}
+.menu button:active,.menu button:hover{background:var(--sunken)}
+.menu hr{border:0;border-top:1px solid var(--line);margin:6px 4px}
+.toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom,0px));transform:translate(-50%,16px);opacity:0;pointer-events:none;
+  background:#1B202B;color:#fff;border-radius:14px;padding:12px 14px 12px 16px;display:flex;align-items:center;gap:14px;width:max-content;max-width:min(92vw,520px);
+  box-shadow:var(--sh-pop);transition:opacity .2s var(--ease-out),transform .25s var(--ease-out);z-index:2800;font-size:15px}
+.toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.toast button{border:0;background:none;color:#9BBEFF;font-weight:700;cursor:pointer;padding:6px 4px;font-size:15px}
+@media (min-width:880px){.toast{bottom:24px}}
+.login{position:fixed;inset:0;z-index:3000;background:var(--bg);overflow-y:auto;display:flex;flex-direction:column;align-items:center;padding-bottom:28px}
+.login > *{flex:none}
+.login-hero{position:relative;width:100%;background:var(--accent-2);color:#fff;padding:calc(28px + env(safe-area-inset-top,0px)) 24px 84px;overflow:hidden;
+  border-radius:0 0 28px 28px;display:flex;justify-content:center}
+.login-art{display:block;width:calc(100% + 16px);height:auto;margin:6px -8px 18px;overflow:visible}
+.login-art .ria{fill:none;stroke:rgba(255,255,255,.08);stroke-width:30;stroke-linecap:round}
+.login-art .calle{fill:none;stroke:rgba(255,255,255,.09);stroke-width:9}
+.login-art .ruta{fill:none;stroke:rgba(255,255,255,.85);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1 9;animation:ruta 1.6s var(--ease-out) both}
+.login-art .parada circle{fill:#fff;stroke:var(--accent-2);stroke-width:3}
+.login-art .hechas circle{fill:rgba(255,255,255,.55)}
+.login-art .meta circle{fill:#fff}
+.login-art .meta path{fill:none;stroke:var(--accent-2);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+@keyframes ruta{from{stroke-dashoffset:120;opacity:0}to{stroke-dashoffset:0;opacity:1}}
+.login-copy{position:relative;width:100%;max-width:440px}
+.wordmark{display:inline-flex;align-items:center;gap:8px;font-weight:750;font-size:15px;letter-spacing:.01em;background:rgba(255,255,255,.14);border-radius:999px;padding:6px 12px 6px 9px}
+.wordmark .ico{width:18px;height:18px}
+.login-copy h1{font-size:clamp(28px,7.5vw,38px);line-height:1.08;margin:0 0 8px;letter-spacing:-.025em;text-wrap:balance}
+.login-copy p{margin:0;color:var(--on-accent-2);font-size:17px}
+.login-card{position:relative;width:calc(100% - 32px);max-width:440px;margin-top:-56px;background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--sh-2);
+  padding:22px 20px 18px;animation:sube .5s var(--ease-out) both .08s}
+@keyframes sube{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field{display:block;margin-bottom:14px;min-width:0}
+.field > span:first-child{display:block;font-size:14px;font-weight:650;margin-bottom:6px;color:var(--ink-2)}
+.field small{font-weight:400;color:var(--ink-3)}
+.pw{position:relative;display:block}
+.pw .input{padding-right:48px}
+.eye{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:44px;height:44px;border:0;background:none;color:var(--ink-3);border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.eye[aria-pressed="true"]{color:var(--accent)}
+.input{width:100%;height:var(--tap);border:0;border-radius:var(--r-sm);padding:0 14px;font:inherit;font-size:18px;color:var(--ink);background:var(--sunken);
+  box-shadow:inset 0 0 0 1px var(--line);transition:box-shadow .15s ease,background-color .15s ease;-webkit-appearance:none}
+.input:focus{outline:0;background:var(--surface);box-shadow:inset 0 0 0 2px var(--accent-2)}
+.input[aria-invalid="true"]{box-shadow:inset 0 0 0 2px var(--danger);background:#FFF7F6}
+.input::placeholder{color:var(--ink-3)}
+#fRuta{text-transform:uppercase;font-weight:650;letter-spacing:.04em}
+#fRuta::placeholder{text-transform:none;font-weight:400;letter-spacing:0}
+#btnEntrar{width:100%;min-height:56px;font-size:17px;margin-top:2px}
+#btnEntrar .ico{transition:transform .2s var(--ease-out)}
+#btnEntrar:active .ico{transform:translateX(3px)}
+.login-foot{font-size:14px;color:var(--ink-3);margin:14px 2px 0;line-height:1.45;text-align:center}
+.login-foot a{color:var(--ink-3);text-underline-offset:3px}
+.form-error{color:var(--danger);font-size:15px;margin:4px 0 0;min-height:22px}
+.map-tools{position:absolute;right:12px;bottom:12px;z-index:500}
+.map-tools .btn{background:var(--surface);box-shadow:var(--sh-2);width:52px;padding:0}
+.map-banner{position:absolute;left:12px;right:12px;top:12px;z-index:500;background:var(--accent);color:#fff;border-radius:var(--r);padding:12px 14px;
+  display:flex;align-items:center;gap:12px;box-shadow:var(--sh-pop);font-weight:650}
+.map-banner span{flex:1}
+.map-banner button{background:rgba(255,255,255,.18);border:0;color:#fff;border-radius:8px;min-height:44px;padding:0 14px;font-weight:650;cursor:pointer;font-size:15px}
+.map-banner .save{background:#fff;color:var(--accent)}
+.map-banner .save[disabled]{opacity:.5}
+.mk.edit{width:44px;height:44px;line-height:39px;font-size:16px;background:#fff;color:var(--accent);border:3px solid var(--accent);box-shadow:0 0 0 6px rgba(24,89,214,.18),0 3px 8px rgba(16,24,40,.35);cursor:grab}
+.mk{width:30px;height:30px;border-radius:50%;background:#fff;border:2.5px solid var(--accent);color:var(--accent-ink);font:750 13px/25px var(--font);text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+.mk.next{width:40px;height:40px;line-height:35px;font-size:16px;background:var(--accent);color:#fff;border-color:#fff;box-shadow:0 2px 6px rgba(16,24,40,.35)}
+.mk.done{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+.mk.skip{background:var(--warn-soft);border-color:var(--warn);color:var(--warn)}
+.me{width:18px;height:18px;border-radius:50%;background:#2B7BFF;border:3px solid #fff;box-shadow:0 0 0 6px rgba(43,123,255,.2),0 1px 4px rgba(0,0,0,.3)}
+.leaflet-container{font-family:var(--font)}
+.leaflet-popup-content{font-size:15px;margin:12px 14px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app" id="app" data-view="list">
+  <header class="top">
+    <div class="title">
+      <h1 id="routeName">GnvRuteHelper</h1>
+      <div class="sub" id="routeSub"></div>
+    </div>
+    <button class="btn small" id="btnRecalc" hidden aria-label="Ordenar desde aquí"><svg class="ico"><use href="#i-locate"/></svg><span>Ordenar desde aquí</span></button>
+    <button class="btn icon ghost" id="btnMenu" aria-label="Más opciones" aria-haspopup="true" aria-expanded="false"><svg class="ico"><use href="#i-dots"/></svg></button>
+    <div class="menu" id="menu" hidden role="menu"></div>
+  </header>
+
+  <main class="body">
+    <section class="pane list-pane" id="listPane" aria-label="Lista de clientes"></section>
+    <section class="pane map-pane" aria-label="Mapa">
+      <div id="map"></div>
+      <div class="map-banner" id="placeBanner" hidden><span id="placeText"></span><button id="placeCancel">Cancelar</button><button id="placeSave" class="save">Guardar</button></div>
+      <div class="map-tools"><button class="btn" id="btnFit" aria-label="Ver toda la ruta"><svg class="ico"><use href="#i-map"/></svg></button></div>
+    </section>
+  </main>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" aria-selected="true" data-view="list"><svg class="ico"><use href="#i-list"/></svg>Lista</button>
+    <button role="tab" aria-selected="false" data-view="map"><svg class="ico"><use href="#i-map"/></svg>Mapa</button>
+  </nav>
+</div>
+
+<div class="login" id="login" hidden>
+  <header class="login-hero">
+
+    <div class="login-copy">
+      <div class="wordmark"><svg class="ico"><use href="#i-route"/></svg>GnvRuteHelper</div>
+    <svg class="login-art" viewBox="0 0 420 150" aria-hidden="true">
+      <path class="ria" d="M-10 128 C 70 108, 130 140, 210 122 S 350 96, 430 112"/>
+      <path class="calle" d="M-10 38 H430 M-10 88 H430 M64 -10 V160 M182 -10 V160 M300 -10 V160 M-10 150 L170 -10"/>
+      <path class="ruta" d="M40 70 L104 38 L182 62 L248 30 L300 88 L370 56"/>
+      <g class="hechas"><circle cx="40" cy="70" r="7"/></g>
+      <g class="parada"><circle cx="104" cy="38" r="10"/><circle cx="182" cy="62" r="10"/><circle cx="248" cy="30" r="10"/><circle cx="300" cy="88" r="10"/></g>
+      <g class="meta"><circle cx="370" cy="56" r="14"/><path d="M364 56l4 4l8-8"/></g>
+    </svg>
+      <h1>Tu ruta de hoy, en orden.</h1>
+      <p>Del primer cliente al último, sin dar vueltas.</p>
+    </div>
+  </header>
+  <form class="login-card" id="loginForm" novalidate>
+    <div class="pair">
+      <label class="field"><span>Ruta</span>
+        <input class="input" id="fRuta" name="ruta" placeholder="1QA" autocapitalize="characters" autocomplete="off" spellcheck="false" required></label>
+      <label class="field"><span>Buzón</span>
+        <span class="pw"><input class="input" id="fBuzon" name="buzon" type="password" inputmode="numeric" autocomplete="off" required>
+        <button type="button" class="eye" id="btnEye" aria-label="Mostrar el buzón" aria-pressed="false"><svg class="ico"><use href="#i-eye"/></svg></button></span></label>
+    </div>
+    <label class="field"><span>Tu nombre <small>· firma tus notas</small></span>
+      <input class="input" id="fAutor" name="autor" placeholder="Jon" autocomplete="given-name"></label>
+    <p class="form-error" id="loginError" role="alert"></p>
+    <button class="btn primary" id="btnEntrar" type="submit"><span>Entrar</span><svg class="ico"><use href="#i-arrow"/></svg></button>
+    <p class="login-foot">Usa la ruta y el buzón de Telynet. Los visitados y las notas se comparten con quien lleve la misma ruta.</p>
+    <p class="login-foot" style="margin-top:6px"><a href="oficina.html">Acceso de oficina</a></p>
+  </form>
+</div>
+
+<div class="scrim" id="scrim" hidden></div>
+<section class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+  <div class="grab" aria-hidden="true"><i></i></div>
+  <div class="sheet-body" id="sheetBody"></div>
+</section>
+<div class="toast" id="toast" role="status" aria-live="polite"><span id="toastText"></span><button id="toastAct" hidden></button></div>
+
+<!-- Iconos (dibujados en SVG, estilo Tabler) -->
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-go" viewBox="0 0 24 24"><path d="M6 18v-6a3 3 0 0 1 3-3h10l-4-4m0 8l4-4"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5l10-10"/></symbol>
+  <symbol id="i-skip" viewBox="0 0 24 24"><path d="M4 5v14l12-7z"/><path d="M20 5v14"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5-2.5l5 2v4a2 2 0 0 1-2 2a16 16 0 0 1-15-15a2 2 0 0 1 2-2"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0-6 0"/><path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1-2.827 0l-4.244-4.243a8 8 0 1 1 11.314 0z"/></symbol>
+  <symbol id="i-locate" viewBox="0 0 24 24"><path d="M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0"/><path d="M12 12m-8 0a8 8 0 1 0 16 0a8 8 0 1 0-16 0"/><path d="M12 2v2M12 20v2M20 12h2M2 12h2"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/><path d="M7 9l5-5l5 5"/><path d="M12 4v12"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M5 6v.01M5 12v.01M5 18v.01"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><path d="M3 7l6-3l6 3l6-3v13l-6 3l-6-3l-6 3v-13"/><path d="M9 4v13M15 7v13"/></symbol>
+  <symbol id="i-dots" viewBox="0 0 24 24"><path d="M5 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0-2 0M12 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0-2 0M19 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0-2 0"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14l-4-4l4-4"/><path d="M5 10h11a4 4 0 1 1 0 8h-1"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 9v4M12 16v.01"/><path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636-2.87l-8.106-13.536a1.914 1.914 0 0 0-3.274 0z"/></symbol>
+  <symbol id="i-route" viewBox="0 0 24 24"><path d="M3 19a2 2 0 1 0 4 0a2 2 0 0 0-4 0M19 7a2 2 0 1 0 0-4a2 2 0 0 0 0 4z"/><path d="M11 19h5.5a3.5 3.5 0 0 0 0-7h-8a3.5 3.5 0 0 1 0-7h4.5"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 5a5 5 0 0 1 7 0a5 5 0 0 0 7 0v9a5 5 0 0 1-7 0a5 5 0 0 0-7 0v-9zM5 21v-7"/></symbol>
+  <symbol id="i-note" viewBox="0 0 24 24"><path d="M13 20l7-7"/><path d="M13 20v-6a1 1 0 0 1 1-1h6v-7a2 2 0 0 0-2-2h-12a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h7"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24"><path d="M14 8v-2a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-2"/><path d="M9 12h12l-3-3M18 15l3-3"/></symbol>
+  <symbol id="i-cloud-off" viewBox="0 0 24 24"><path d="M3 3l18 18"/><path d="M18 18h-11c-2.598 0-4.705-2.015-4.705-4.5s2.107-4.5 4.705-4.5c.112-.5.305-.973.568-1.408m2.083-1.97c.536-.302 1.12-.528 1.736-.664c1.734-.385 3.556.098 4.779 1.267c1.224 1.168 1.684 2.857 1.21 4.432h1c1.933 0 3.5 1.567 3.5 3.5a3.4 3.4 0 0 1-.5 1.78"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8.1 8.1 0 0 0-15.5-2m-.5-4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></symbol>
+  <symbol id="i-walk" viewBox="0 0 24 24"><path d="M12 4a1 1 0 1 0 2 0a1 1 0 1 0-2 0"/><path d="M7 21l3-4M16 21l-2-4l-3-3l1-6"/><path d="M6 12l2-3l4-1l3 3l3 1"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M9 6l6 6l-6 6"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0-4 0"/><path d="M21 12c-2.4 4-5.4 6-9 6c-3.6 0-6.6-2-9-6c2.4-4 5.4-6 9-6c3.6 0 6.6 2 9 6"/></symbol>
+  <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M10.585 10.587a2 2 0 0 0 2.829 2.828"/><path d="M16.681 16.673a8.717 8.717 0 0 1-4.681 1.327c-3.6 0-6.6-2-9-6c1.272-2.12 2.712-3.678 4.32-4.674m2.86-1.146a9.055 9.055 0 0 1 1.82-.18c3.6 0 6.6 2 9 6c-.666 1.11-1.379 2.067-2.138 2.87"/><path d="M3 3l18 18"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 18l6-6M13 6l6 6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6l6-6"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M7 11l5 5l5-5M12 4v12"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M8 9h-1a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1M12 14v-11M9 6l3-3l3 3"/></symbol>
+  <symbol id="i-plus-sq" viewBox="0 0 24 24"><path d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-14a2 2 0 0 1-2-2zM9 12h6M12 9v6"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6l-12 12M6 6l12 12"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><path d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-12a2 2 0 0 1-2-2v-12z"/><path d="M16 3v4M8 3v4M4 11h16"/></symbol>
+</svg>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+/* =====================================================================
+   GnvRuteHelper · Fase 2 (base común en Supabase)
+   - Entras con ruta + buzón. La app recibe una "llave" (token) y la guarda.
+   - Clientes, visitados, notas y pines viven en Supabase y se comparten.
+   - El ORDEN de visita se calcula en cada dispositivo (no gasta datos).
+   - Si no hay cobertura, los cambios se guardan en una cola y se envían luego.
+   ===================================================================== */
+
+// ---------- Conexión con Supabase (la clave "anon" es pública por diseño) ----------
+const SUPABASE_URL = 'https://dwzuasbezvemzmokcnrn.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR3enVhc2JlenZlbXptb2tjbnJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0NzA4NTQsImV4cCI6MjEwNzA0Njg1NH0.7J5plux3nW_MnnjLvcI2DWROCcL6tsyb_fCks75j_Yw';
+
+// Llama a una de nuestras funciones de la base de datos
+async function rpc(fn, args){
+  let r;
+  try {
+    r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+      method:'POST',
+      headers:{ apikey:SUPABASE_KEY, Authorization:`Bearer ${SUPABASE_KEY}`, 'Content-Type':'application/json' },
+      body: JSON.stringify(args)
+    });
+  } catch { const e = new Error('SIN_CONEXION'); e.red = true; throw e; }
+  const txt = await r.text();
+  if (!r.ok){
+    let msg = 'ERROR'; try { msg = JSON.parse(txt).message || msg; } catch {}
+    throw new Error(msg);
+  }
+  return txt ? JSON.parse(txt) : null;
+}
+
+// ---------- Guardado en el dispositivo ----------
+const store = {
+  get(k, def){ try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch { return def; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  del(k){ try { localStorage.removeItem(k); } catch {} }
+};
+const KEY_SES = 'gnv.sesion.v1', KEY_GEO = 'gnv.geo.v2', KEY_COLA = 'gnv.cola.v1';
+let SES = store.get(KEY_SES, null);          // sesión: {token, ruta, nombre, autor}
+let S = null;                                 // la ruta de hoy (copia local)
+let geoCache = store.get(KEY_GEO, {});
+let cola = store.get(KEY_COLA, []);           // cambios pendientes de enviar
+const ui = { ficha:null, view:'list', placing:null, busy:false, me:null, todos:false, conexion:true };
+const keyRuta = () => 'gnv.ruta.v2.' + SES.ruta;
+const save = () => { if (SES && S) store.set(keyRuta(), S); };
+
+// ---------- Utilidades ----------
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ico = (id, st) => `<svg class="ico" aria-hidden="true"${st ? ` style="${st}"` : ''}><use href="#i-${id}"/></svg>`;
+const norm = s => String(s ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+const addrKey = c => norm(`${c.direccion}|${c.poblacion}`);
+const byId = id => S.clients.find(c => c.id === id);
+const located = c => Number.isFinite(c.lat) && Number.isFinite(c.lng);
+const pausa = ms => new Promise(r => setTimeout(r, ms));
+// Fechas en formato 2026-10-08 (hora de aquí)
+const isoHoy = () => new Date().toLocaleDateString('sv-SE', {timeZone:'Europe/Madrid'});
+const diaSemana = iso => ((new Date(iso + 'T12:00:00').getDay() + 6) % 7) + 1;   // 1 = lunes ... 7 = domingo
+const NOMBRE_DIA = ['', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
+const fechaVista = () => (S && S.fechaVista) || isoHoy();
+const fmtFecha = iso => new Intl.DateTimeFormat('es-ES', {weekday:'long', day:'numeric', month:'short'}).format(new Date(iso + 'T12:00:00'));
+const usaDias = () => S && S.clients.some(c => c.dia_visita);
+const visibles = () => !S ? [] : (!usaDias() || ui.todos) ? S.clients : S.clients.filter(c => !c.dia_visita || c.dia_visita === diaSemana(fechaVista()));
+const notasDe = id => (S.notas || []).filter(n => n.cliente_id === id);
+
+function dist(a, b){
+  const R = 6371000, rad = Math.PI/180;
+  const dLat = (b.lat-a.lat)*rad, dLng = (b.lng-a.lng)*rad;
+  const h = Math.sin(dLat/2)**2 + Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+const fmtDist = m => m < 950 ? `${Math.round(m/10)*10} m` : `${(m/1000).toFixed(1).replace('.',',')} km`;
+function hace(fecha){
+  const s = (Date.now() - new Date(fecha)) / 1000;
+  if (s < 3600) return `hace ${Math.max(1, Math.round(s/60))} min`;
+  if (s < 86400) return `hace ${Math.round(s/3600)} h`;
+  return new Intl.DateTimeFormat('es-ES', {day:'numeric', month:'short'}).format(new Date(fecha));
+}
+
+// ---------- El cerebro: ordenar la ruta (vecino más cercano + 2-opt) ----------
+function ordenar(start, pts, coste){
+  if (!pts.length) return [];
+  const all = [start, ...pts], n = all.length;
+  const D = all.map(a => all.map(b => coste ? coste(a, b) : dist(a, b)));
+  const used = Array(n).fill(false); used[0] = true;
+  const path = [0];
+  for (let k = 1; k < n; k++){
+    const last = path[path.length-1]; let best = -1, bd = Infinity;
+    for (let j = 1; j < n; j++) if (!used[j] && D[last][j] < bd){ bd = D[last][j]; best = j; }
+    used[best] = true; path.push(best);
+  }
+  let mejora = true, vueltas = 0;
+  while (mejora && vueltas++ < 200){
+    mejora = false;
+    for (let i = 1; i < n-1; i++) for (let k = i+1; k < n; k++){
+      const a = path[i-1], b = path[i], c = path[k], e = path[k+1];
+      const antes = D[a][b] + (e !== undefined ? D[c][e] : 0);
+      const despues = D[a][c] + (e !== undefined ? D[b][e] : 0);
+      if (despues < antes - 0.5){ path.splice(i, k-i+1, ...path.slice(i, k+1).reverse()); mejora = true; }
+    }
+  }
+  return path.slice(1).map(i => pts[i-1].id);
+}
+// ---------- Distancias ANDANDO por calles reales ----------
+// Pedimos a un servicio gratuito de OpenStreetMap (FOSSGIS) una tabla con los minutos
+// andando entre todos los puntos de la ruta. Una sola consulta pequeña por reordenación.
+async function prepararMatriz(start){
+  const pts = visibles().filter(located);
+  if (pts.length < 2 || pts.length > 90){ S.matriz = null; return false; }
+  const all = (start ? [{id:'__inicio', lat:start.lat, lng:start.lng}] : []).concat(pts.map(c => ({id:c.id, lat:c.lat, lng:c.lng})));
+  const coords = all.map(p => `${(+p.lng).toFixed(6)},${(+p.lat).toFixed(6)}`).join(';');
+  const ctrl = new AbortController(), to = setTimeout(() => ctrl.abort(), 12000);
+  try {
+    const r = await fetch(`https://routing.openstreetmap.de/routed-foot/table/v1/foot/${coords}?annotations=duration,distance`, {signal:ctrl.signal});
+    const j = await r.json();
+    if (j.code !== 'Ok') throw new Error(j.code);
+    const huella = Object.fromEntries(all.map(p => [p.id, `${p.lat},${p.lng}`]));
+    S.matriz = {ids: all.map(p => p.id), dur: j.durations, dis: j.distances, huella};
+    return true;
+  } catch { S.matriz = null; return false; }
+  finally { clearTimeout(to); }
+}
+// Busca en la tabla; si el punto no está o se ha movido el pin, devuelve null
+function tramoAndando(a, b){
+  const M = S.matriz; if (!M) return null;
+  const ka = a.id || '__inicio', kb = b.id || '__inicio';
+  const ia = M.ids.indexOf(ka), ib = M.ids.indexOf(kb);
+  if (ia < 0 || ib < 0) return null;
+  if (M.huella[ka] !== `${a.lat},${a.lng}` || M.huella[kb] !== `${b.lat},${b.lng}`) return null;
+  const t = M.dur[ia][ib], m = M.dis[ia][ib];
+  return t == null ? null : {t, m};
+}
+function costeAndando(){
+  if (!S.matriz) return null;
+  return (a, b) => {
+    const x = tramoAndando(a, b), y = tramoAndando(b, a);
+    if (!x && !y) return dist(a, b) / 1.2 * 1.6;              // sin dato: línea recta penalizada
+    return ((x ? x.t : y.t) + (y ? y.t : x.t)) / 2;            // media ida/vuelta (calles de un sentido)
+  };
+}
+// Monta el orden del día: hechos (por hora) + pendientes ordenados + sin ubicar + para luego
+function recalcular(start){
+  const vis = visibles();
+  const done = vis.filter(c => c.status === 'done').sort((a,b) => a.doneAt - b.doneAt);
+  const pend = vis.filter(c => c.status === 'pending');
+  const conSitio = pend.filter(located);
+  let origen = start;
+  if (!origen){ const u = [...done].reverse().find(located); origen = u ? {id:u.id, lat:u.lat, lng:u.lng} : null; }
+  let orden;
+  const coste = costeAndando();
+  if (origen) orden = ordenar(origen, conSitio, coste);
+  else if (conSitio.length){ const [p, ...r] = conSitio; orden = [p.id, ...ordenar(p, r, coste)]; }
+  else orden = [];
+  S.order = [...done.map(c => c.id), ...orden, ...pend.filter(c => !located(c)).map(c => c.id),
+             ...vis.filter(c => c.status === 'skipped').map(c => c.id)];
+  S.start = origen ? {lat:origen.lat, lng:origen.lng, src: start ? start.src : 'last', acc: start ? start.acc : null} : null;
+  S.calle = !!coste;
+  save();
+}
+async function empezarPor(id){
+  const c = byId(id);
+  cerrarFicha();
+  if (!S.matriz) await prepararMatriz(null);
+  recalcular({id:c.id, lat:c.lat, lng:c.lng, src:'manual'});
+  const i = S.order.indexOf(id), nDone = S.order.filter(x => byId(x).status === 'done').length;
+  S.order.splice(i, 1); S.order.splice(nDone, 0, id);
+  save(); render(true);
+  toast(`Empiezas por ${c.nombre}. El resto, ordenado ${S.calle ? 'andando por calle' : 'en línea recta'} desde ahí.`);
+}
+
+// ---------- GPS ----------
+const PRECISION_MALA = 80;
+// Paso 1: escuchamos al GPS hasta 12 s y nos quedamos con la lectura más precisa.
+// Paso 2: si no llega nada, pedimos una ubicación "aproximada" (wifi/antena), que casi siempre responde.
+// Si todo falla, guardamos el motivo en ui.gpsError para explicarlo bien.
+function miPosicion(onLectura){
+  ui.gpsError = null;
+  return new Promise(res => {
+    if (!navigator.geolocation){ ui.gpsError = 'NO_API'; return res(null); }
+    let mejor = null, fin = false;
+    const lectura = p => ({lat:p.coords.latitude, lng:p.coords.longitude, acc:Math.round(p.coords.accuracy), src:'gps'});
+    const terminar = () => {
+      if (fin) return; fin = true; navigator.geolocation.clearWatch(w); clearTimeout(t);
+      if (mejor){ ui.gpsError = null; return res(mejor); }
+      if (ui.gpsError === 1) return res(null);
+      navigator.geolocation.getCurrentPosition(
+        p => { mejor = lectura(p); ui.gpsError = null; onLectura && onLectura(mejor); res(mejor); },
+        e => { ui.gpsError = e.code; res(null); },
+        {enableHighAccuracy:false, maximumAge:300000, timeout:10000});
+    };
+    const w = navigator.geolocation.watchPosition(p => {
+      const l = lectura(p);
+      if (!mejor || l.acc < mejor.acc) mejor = l;
+      onLectura && onLectura(mejor);
+      if (mejor.acc <= 25) terminar();
+    }, e => { ui.gpsError = e.code; if (e.code === 1) terminar(); },   // 1 = sin permiso: no tiene sentido esperar
+    {enableHighAccuracy:true, maximumAge:0});
+    const t = setTimeout(terminar, 12000);
+  });
+}
+// Explica por qué no hay ubicación y cómo arreglarlo
+function motivoGPS(){
+  return {
+    1: 'Falta permiso de ubicación. Revisa: Ajustes del móvil > Aplicaciones > Chrome > Permisos > Ubicación > Permitir. Y en Chrome: ⋮ > Configuración > Configuración de sitios > Ubicación, que esta web no esté bloqueada. Después recarga la página.',
+    2: 'La tablet no consigue ubicarse. Revisa en Ajustes de Android que la Ubicación esté activada y que Chrome tenga permiso de ubicación.',
+    3: 'El GPS no ha respondido a tiempo. Si estás en interior, prueba junto a una ventana o en la calle.',
+    NO_API: 'Este navegador no permite usar la ubicación. Abre la app con Chrome.'
+  }[ui.gpsError] || 'No llega señal de ubicación.';
+}
+
+// ---------- Direcciones a coordenadas (OpenStreetMap / Nominatim, 1 consulta por segundo) ----------
+async function buscarDireccion(c){
+  const intentos = [`${c.direccion}, ${c.poblacion}, Bizkaia, España`,
+                    `${c.direccion.replace(/\s+\d+\w*$/, '')}, ${c.poblacion}, Bizkaia, España`];
+  for (let i = 0; i < intentos.length; i++){
+    if (i) await pausa(1100);
+    try {
+      const r = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=es&accept-language=es&q=' + encodeURIComponent(intentos[i]));
+      if (!r.ok) continue;
+      const j = await r.json();
+      if (j[0]){
+        const exacto = ['house','building','amenity','shop'].includes(j[0].addresstype) || j[0].category === 'amenity';
+        return {lat:+j[0].lat, lng:+j[0].lon, geo: (i > 0 || !exacto) ? 'aprox' : 'ok'};
+      }
+    } catch { return null; }
+  }
+  return null;
+}
+// ---------- Sesión: entrar y salir ----------
+async function entrar(ruta, buzon, autor){
+  const r = await rpc('entrar', {p_ruta: ruta, p_buzon: buzon});
+  if (r.error) throw new Error(r.error);
+  SES = {token:r.token, ruta:r.ruta, nombre:r.nombre, autor:autor.trim()};
+  store.set(KEY_SES, SES);
+}
+function salir(motivo){
+  if (SES) rpc('salir', {p_token: SES.token}).catch(() => {});
+  if (SES) store.del('gnv.ruta.v2.' + SES.ruta);
+  SES = null; S = null; cola = []; store.del(KEY_SES); store.set(KEY_COLA, cola);
+  mostrarLogin(motivo);
+}
+function mostrarLogin(msg){
+  $('#login').hidden = false;
+  $('#loginError').textContent = msg || '';
+  $('#fAutor').value = store.get('gnv.autor', '');
+  $('#fRuta').value = store.get('gnv.ultimaRuta', '');
+  // la animación de la ruta se repite cada vez que aparece la pantalla
+  const r = document.querySelector('.login-art .ruta'); if (r){ r.style.animation = 'none'; r.getBoundingClientRect(); r.style.animation = ''; }
+  setTimeout(() => ($('#fRuta').value ? $('#fBuzon') : $('#fRuta')).focus({preventScroll:true}), 400);
+}
+
+// ---------- Traer datos de Supabase ----------
+// Carga completa (al entrar, al abrir la app tras un rato o al tocar "Actualizar")
+async function cargarRuta(){
+  const d = await rpc('ruta_de_hoy', {p_token: SES.token});
+  const antes = S && S.fecha === d.fecha ? S : null;            // mismo día: conservamos el orden
+  const estado = {}; (d.visitas || []).forEach(v => estado[v.cliente_id] = v);
+  S = {
+    fecha: d.fecha, nombre: d.ruta.nombre,
+    clients: d.clientes.map(c => ({...c, lat: c.lat ?? NaN, lng: c.lng ?? NaN,
+      status: estado[c.id] ? estado[c.id].estado : 'pending',
+      doneAt: estado[c.id] && estado[c.id].estado === 'done' ? +new Date(estado[c.id].hora) : 0})),
+    notas: d.notas || [],
+    order: antes ? antes.order : [], start: antes ? antes.start : null, matriz: antes ? antes.matriz : null, calle: antes ? antes.calle : false,
+    fechaVista: antes ? antes.fechaVista : null, preguntado: antes ? antes.preguntado : null,
+    sync: new Date(Date.now() - 60000).toISOString(),
+    cargada: Date.now()
+  };
+  aplicarCola();
+  const ids = new Set(visibles().map(c => c.id));
+  ui.ordenNuevo = false;
+  if (S.order.length !== ids.size || S.order.some(id => !ids.has(id))){ recalcular(ui.me); ui.ordenNuevo = true; }
+  ui.conexion = true; save();
+}
+// Solo lo que ha cambiado (lo usan los otros dispositivos de la ruta): bytes, no megas
+async function traerCambios(){
+  if (!SES || !S || ui.busy) return;
+  try {
+    const d = await rpc('cambios_desde', {p_token: SES.token, p_desde: S.sync});
+    let hay = false;
+    for (const v of d.visitas){ const c = byId(v.cliente_id); if (c && c.status !== v.estado){
+      c.status = v.estado; c.doneAt = v.estado === 'done' ? +new Date(v.hora) : 0; hay = true; } }
+    for (const n of d.notas){ if (!S.notas.some(x => x.id === n.id)){ S.notas.unshift(n); hay = true; } }
+    for (const p of d.pines){ const c = byId(p.id); if (c && (c.lat !== p.lat || c.lng !== p.lng)){
+      Object.assign(c, {lat: p.lat ?? NaN, lng: p.lng ?? NaN, geo: p.geo}); hay = true; } }
+    S.sync = new Date(new Date(d.ahora) - 10000).toISOString();
+    aplicarCola(); ui.conexion = true; save();
+    if (hay) render();
+  } catch (e){ tratarError(e); }
+}
+
+// ---------- Enviar cambios (con cola para cuando no hay cobertura) ----------
+function enviar(fn, args){
+  cola.push({fn, args}); store.set(KEY_COLA, cola);
+  vaciarCola();
+}
+let vaciando = false;
+async function vaciarCola(){
+  if (vaciando || !SES) return; vaciando = true;
+  while (cola.length){
+    const op = cola[0];
+    try { await rpc(op.fn, {p_token: SES.token, ...op.args}); ui.conexion = true; }
+    catch (e){
+      if (e.red){ ui.conexion = false; break; }                 // sin cobertura: se reintenta luego
+      if (e.message === 'SESION_CADUCADA'){ vaciando = false; return salir('Tu sesión ha caducado. Vuelve a entrar.'); }
+      ui.conexion = true;
+      toast('No se ha podido guardar un cambio: ' + e.message);  // error raro: lo descartamos
+    }
+    if (ui.conexion) { cola.shift(); store.set(KEY_COLA, cola); }
+  }
+  vaciando = false; renderSync();
+}
+// Los cambios que aún no han llegado al servidor se respetan en pantalla
+function aplicarCola(){
+  for (const op of cola){
+    const c = op.args.p_cliente && byId(op.args.p_cliente);
+    if (op.fn === 'marcar_visita' && c){ c.status = op.args.p_estado; if (c.status === 'done' && !c.doneAt) c.doneAt = Date.now(); }
+    if (op.fn === 'guardar_pin' && c) Object.assign(c, {lat: op.args.p_lat, lng: op.args.p_lng, geo: op.args.p_geo});
+  }
+}
+function tratarError(e){
+  if (e.red){ ui.conexion = false; renderSync(); return; }
+  if (e.message === 'SESION_CADUCADA') return salir('Tu sesión ha caducado. Vuelve a entrar.');
+  toast('Algo ha fallado: ' + e.message);
+}
+
+// ---------- Acciones sobre un cliente ----------
+function marcar(id, status){
+  const c = byId(id), antes = c.status;
+  c.status = status; c.doneAt = status === 'done' ? Date.now() : 0;
+  cerrarFicha(); save(); render(true);
+  enviar('marcar_visita', {p_cliente: id, p_estado: status});
+  const txt = {done:`${c.nombre}: hecho`, skipped:`${c.nombre}: para luego`, pending:`${c.nombre} vuelve a la ruta`}[status];
+  toast(txt, status !== 'pending' ? {label:'Deshacer', fn:() => marcar(id, antes)} : null);
+}
+function fijarPosicion(c, lat, lng, geo = 'manual'){
+  Object.assign(c, {lat, lng, geo});
+  geoCache[addrKey(c)] = {lat, lng, geo}; store.set(KEY_GEO, geoCache);
+  save(); render();
+  enviar('guardar_pin', {p_cliente: c.id, p_lat: lat, p_lng: lng, p_geo: geo});
+}
+// Vuelve a colocar el pin según la dirección (para arreglar un pin movido por error)
+async function ubicarPorDireccion(id){
+  const c = byId(id); cerrarFicha();
+  toast('Buscando la dirección…');
+  const r = await buscarDireccion(c);
+  if (!r) return toast('No encuentro esa dirección. Mueve el pin a mano.');
+  const prev = located(c) ? {lat:c.lat, lng:c.lng, geo:c.geo} : null;
+  fijarPosicion(c, r.lat, r.lng, r.geo);
+  toast(`${c.nombre} colocado según su dirección`, prev ? {label:'Deshacer', fn:() => fijarPosicion(c, prev.lat, prev.lng, prev.geo)} : null);
+}
+// Centro aproximado de la ruta (para avisar si un pin acaba muy lejos)
+function centroRuta(sinId){
+  const pts = S.clients.filter(x => located(x) && x.id !== sinId);
+  if (!pts.length) return null;
+  const med = arr => { const a = [...arr].sort((x, y) => x - y); return a[Math.floor(a.length/2)]; };
+  return {lat: med(pts.map(p => p.lat)), lng: med(pts.map(p => p.lng))};
+}
+async function guardarNota(id, texto){
+  texto = texto.trim(); if (!texto) return;
+  try {
+    const n = await rpc('nueva_nota', {p_token: SES.token, p_cliente: id, p_texto: texto, p_autor: SES.autor || ''});
+    S.notas.unshift(n); save(); render(); toast('Nota guardada para toda la ruta');
+  } catch (e){ if (e.red) toast('Sin cobertura: la nota no se ha guardado. Prueba en un rato.'); else tratarError(e); }
+}
+async function borrarNota(id){
+  if (!confirm('¿Borrar esta nota para todos?')) return;
+  try { await rpc('borrar_nota', {p_token: SES.token, p_nota: id}); S.notas = S.notas.filter(n => n.id !== id); save(); render(); }
+  catch (e){ tratarError(e); }
+}
+const linkIr = c => `https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}`;
+
+// ---------- Pintar la lista ----------
+function siguiente(){ return S.order.map(byId).find(c => c && c.status === 'pending' && located(c)); }
+// Tramo de cada parada desde la anterior: andando por calle si hay datos, si no en línea recta
+function tramos(){
+  const out = {}; let prev = S.start && S.start.src === 'gps' && !(S.start.acc > PRECISION_MALA) ? S.start : null;
+  for (const id of S.order){
+    const c = byId(id); if (!c) continue;
+    if (c.status === 'done'){ if (located(c)) prev = c; continue; }
+    if (c.status !== 'pending' || !located(c)) continue;
+    if (prev){
+      const w = tramoAndando(prev, c);
+      out[id] = {d: w ? w.m : dist(prev, c), t: w ? w.t : null, desde: prev.id ? S.order.indexOf(prev.id) + 1 : 'ti'};
+    }
+    prev = c;
+  }
+  return out;
+}
+const fmtMin = s => s < 60 ? '1 min' : s < 3600 ? `${Math.round(s/60)} min` : `${Math.floor(s/3600)} h ${Math.round(s%3600/60)} min`;
+const fmtTramo = t => t.t != null ? fmtMin(t.t) : fmtDist(t.d);
+function cabecera(){
+  const cap = t => t.charAt(0).toUpperCase() + t.slice(1);
+  $('#routeName').innerHTML = SES ? `Ruta ${esc(SES.ruta)}${S && S.nombre ? ` · ${esc(S.nombre)}` : ''}` : 'GnvRuteHelper';
+  const sub = $('#routeSub');
+  if (usaDias() && !ui.todos){
+    sub.innerHTML = `<button class="daypick" data-act="dia">Visitas del ${esc(fmtFecha(fechaVista()))}${ico('down')}</button>`;
+  } else if (usaDias()){
+    sub.innerHTML = `<button class="daypick" data-act="dia">Todos los clientes${ico('down')}</button>`;
+  } else sub.textContent = cap(fmtFecha(isoHoy()));
+}
+function render(swap){
+  cabecera();
+  const pane = $('#listPane');
+  const hay = !!(S && S.clients.length);
+  $('#btnRecalc').hidden = !hay || ui.busy;
+  if (ui.busy) return;
+  if (!S){ pane.innerHTML = ''; return; }
+  if (!hay){ pane.innerHTML = vistaVacia(); renderMapa(); return; }
+
+  const vis = visibles();
+  const total = vis.length, hechos = vis.filter(c => c.status === 'done').length;
+  const sig = siguiente(), T = tramos();
+  const numero = id => S.order.indexOf(id) + 1;
+  const enOrden = S.order.map(byId).filter(Boolean);
+  const sinSitio = enOrden.filter(c => c.status === 'pending' && !located(c));
+  const pend = enOrden.filter(c => c.status === 'pending' && located(c) && c !== sig);
+  const skip = enOrden.filter(c => c.status === 'skipped');
+  const done = enOrden.filter(c => c.status === 'done');
+  const quedaT = Object.values(T).reduce((a, b) => a + (b.t || 0), 0);
+  const quedaD = Object.values(T).reduce((a, b) => a + b.d, 0);
+  const calle = Object.values(T).some(t => t.t != null);
+  const prog = `<div class="prog num"><span><b>${hechos}</b> de ${total}</span><div class="bar"><i style="transform:scaleX(${total ? hechos/total : 0})"></i></div>
+    <span>${quedaD ? (calle ? `quedan ${fmtMin(quedaT)}` : `quedan ${fmtDist(quedaD)}`) : ''}</span></div>`;
+
+  let h = '';
+  if (S.start && S.start.src === 'gps' && S.start.acc > PRECISION_MALA)
+    h += `<div class="notice">${ico('locate')}<div><b>Ubicación poco precisa (±${S.start.acc} m).</b> Las distancias desde ti pueden fallar. Abre un cliente y pulsa <b>Empezar por aquí</b>.</div></div>`;
+  else if (ui.gpsError)
+    h += `<div class="notice">${ico('locate')}<div><b>Sin ubicación.</b> ${motivoGPS()}</div></div>`;
+  if (usaDias() && !ui.todos && fechaVista() !== isoHoy())
+    h += `<div class="notice info">${ico('calendar')}<div>Estás viendo las visitas del <b>${esc(fmtFecha(fechaVista()))}</b>. Lo que marques cuenta como hecho hoy. <button class="inline" data-act="hoy">Volver a hoy</button></div></div>`;
+  if (sinSitio.length)
+    h += `<div class="notice">${ico('alert')}<div><b>${sinSitio.length} ${sinSitio.length === 1 ? 'cliente sin ubicar' : 'clientes sin ubicar'}.</b> Ábrelo y pulsa <b>Colocar</b>.</div></div>`;
+
+  if (sig){
+    const t = T[sig.id], ns = notasDe(sig.id);
+    h += `<article class="hero${swap ? ' swap' : ''}" aria-label="Siguiente visita">
+      <button class="tap" data-act="open" data-id="${sig.id}">
+        <div class="meta"><span class="pill num">${numero(sig.id)}</span>Siguiente parada</div>
+        <h2>${esc(sig.nombre)}</h2>
+        <div class="addr">${esc(sig.direccion)}${sig.geo === 'aprox' ? ' · ubicación aproximada' : ''}</div>
+        ${t ? `<div class="walk num">${ico(t.t != null ? 'walk' : 'route')}${fmtTramo(t)} <span>${t.t != null ? `andando · ${fmtDist(t.d)}` : 'en línea recta'} desde ${t.desde === 'ti' ? 'ti' : 'el ' + t.desde}</span></div>` : ''}
+      </button>
+      ${ns.length ? `<div class="notes">${ico('note')}<div>${ns.slice(0, 2).map(n => `<p>${esc(n.texto)} <small>· ${esc(n.autor || 'Anónimo')}, ${hace(n.creada)}</small></p>`).join('')}</div></div>` : ''}
+      <div class="actions">
+        <a class="btn go" href="${linkIr(sig)}" target="_blank" rel="noopener">${ico('go')}Ir</a>
+        <button class="btn soft" data-act="done" data-id="${sig.id}">${ico('check')}Hecho</button>
+        <button class="btn soft" data-act="skip" data-id="${sig.id}">${ico('skip')}Luego</button>
+      </div>
+      ${prog}
+    </article>`;
+  } else if (!sinSitio.length && !skip.length){
+    h += `<article class="hero done swap"><div class="meta">${ico('flag')}Ruta terminada</div>
+      <h2>Buen trabajo</h2><div class="addr">Has visitado ${hechos} de ${total} clientes.</div>${prog}
+      <div class="actions" style="grid-template-columns:1fr"><button class="btn soft" data-act="reiniciar">${ico('undo')}Volver a empezar la ruta</button></div></article>`;
+  } else if (!sinSitio.length){
+    h += `<div class="notice info">${ico('skip')}<div>Solo quedan los que dejaste para luego. Ábrelos y pulsa <b>Volver a la ruta</b>.</div></div>`;
+  }
+  const lista = (titulo, arr, extra) => arr.length ? `<div class="sec"><h3>${titulo}</h3><span class="num">${extra || arr.length}</span></div><div class="rows">${arr.map(c => fila(c, numero(c.id), T[c.id])).join('')}</div>` : '';
+  h += lista('Después', pend, pend.length + (calle ? ` · ${fmtMin(quedaT - (sig && T[sig.id] && T[sig.id].t || 0))}` : ''));
+  h += lista('Sin ubicar', sinSitio);
+  h += lista('Para luego', skip);
+  h += lista('Hechos', done);
+  h += `<div class="sync" id="sync"></div>`;
+  pane.innerHTML = h;
+  renderSync(); renderMapa();
+  if (ui.ficha) pintarFicha();
+}
+function renderSync(){
+  const el = $('#sync'); if (!el) return;
+  const off = !ui.conexion || cola.length;
+  el.className = 'sync' + (off ? ' off' : '');
+  el.innerHTML = off
+    ? `${ico('cloud-off')}Sin conexión${cola.length ? ` · ${cola.length} ${cola.length === 1 ? 'cambio pendiente' : 'cambios pendientes'}` : ''}`
+    : `${ico('refresh')}Sincronizado con la ruta ${esc(SES.ruta)}`;
+}
+function fila(c, n, t){
+  const cls = c.status === 'done' ? 'is-done' : c.status === 'skipped' ? 'is-skip' : !located(c) ? 'is-nogeo' : '';
+  const ns = notasDe(c.id);
+  return `<div class="row ${cls}">
+    <button class="row-main" data-act="open" data-id="${c.id}">
+      <span class="n num">${c.status === 'done' ? ico('check', 'width:16px;height:16px') : located(c) ? n : '?'}</span>
+      <span class="txt"><div class="name">${esc(c.nombre)}${ns.length ? `<span class="ncount">${ico('note')}${ns.length}</span>` : ''}${c.geo === 'aprox' && c.status === 'pending' ? '<span class="tag">Aprox.</span>' : ''}</div>
+      <div class="addr">${esc(c.direccion)}</div></span>
+      ${t ? `<span class="dist num">${fmtTramo(t)}<small>desde ${t.desde === 'ti' ? 'ti' : 'el ' + t.desde}</small></span>` : ''}
+      ${ico('chevron', '') .replace('class="ico"', 'class="ico chev"')}
+    </button></div>`;
+}
+
+// ---------- Ficha del cliente: hoja que sube desde abajo ----------
+function abrirFicha(id){
+  ui.ficha = id; pintarFicha();
+  const sc = $('#scrim'), sh = $('#sheet');
+  sc.hidden = false; sh.hidden = false;
+  requestAnimationFrame(() => { sc.classList.add('show'); sh.classList.add('show'); });
+  history.pushState({ficha:id}, '');                       // el botón "atrás" del móvil la cierra
+}
+function cerrarFicha(desdeAtras){
+  if (!ui.ficha) return;
+  ui.ficha = null;
+  const sc = $('#scrim'), sh = $('#sheet');
+  sh.style.transform = ''; sc.classList.remove('show'); sh.classList.remove('show');
+  setTimeout(() => { if (!ui.ficha){ sc.hidden = true; sh.hidden = true; } }, 380);
+  if (!desdeAtras && history.state && history.state.ficha) history.back();
+}
+function pintarFicha(){
+  if (ui.ficha === '__dia') return pintarDia();
+  if (ui.ficha === '__instalar') return pintarInstalar();
+  const c = byId(ui.ficha); if (!c){ cerrarFicha(); return; }
+  const ns = notasDe(c.id), esSig = c === siguiente(), n = S.order.indexOf(c.id) + 1;
+  const T = tramos(), t = T[c.id];
+  const q = (cls, icono, txt, attrs) => `<${attrs.startsWith('href') ? 'a' : 'button'} class="qa ${cls}" ${attrs}><span class="c">${ico(icono)}</span>${txt}</${attrs.startsWith('href') ? 'a' : 'button'}>`;
+  let estado = '';
+  if (c.status === 'pending' && located(c)) estado = `
+      <button class="btn" data-act="done" data-id="${c.id}">${ico('check')}Hecho</button>
+      <button class="btn" data-act="skip" data-id="${c.id}">${ico('skip')}Para luego</button>`;
+  else if (c.status !== 'pending') estado = `<button class="btn full" data-act="back" data-id="${c.id}">${ico('undo')}Volver a la ruta</button>`;
+  $('#sheetBody').innerHTML = `
+    <div class="sh-head">
+      <span class="n num" style="${esSig ? 'background:var(--accent);color:#fff' : ''}">${c.status === 'done' ? ico('check', 'width:16px;height:16px') : located(c) ? n : '?'}</span>
+      <div style="flex:1;min-width:0"><h2 id="sheetTitle">${esc(c.nombre)}</h2>
+        <div class="addr">${esc(c.direccion)}${c.poblacion ? ', ' + esc(c.poblacion) : ''}</div>
+        ${t ? `<div class="addr num">${ico(t.t != null ? 'walk' : 'route', 'width:16px;height:16px;vertical-align:-3px;margin-right:4px')}${fmtTramo(t)} desde ${t.desde === 'ti' ? 'ti' : 'el ' + t.desde}</div>` : ''}
+        ${c.geo === 'aprox' ? '<span class="tag" style="margin:6px 0 0">Ubicación aproximada: revisa el pin</span>' : ''}</div>
+      <button class="btn icon" data-act="close" aria-label="Cerrar">${ico('x')}</button>
+    </div>
+    <div class="quick">
+      ${located(c) ? q('main', 'go', 'Ir', `href="${linkIr(c)}" target="_blank" rel="noopener"`) : q('main', 'go', 'Ir', 'aria-disabled="true"')}
+      ${c.telefono ? q('', 'phone', 'Llamar', `href="tel:${esc(c.telefono.replace(/\s/g, ''))}"`) : q('', 'phone', 'Llamar', 'aria-disabled="true"')}
+      ${located(c) ? q('', 'pin', 'Ver en mapa', `data-act="see" data-id="${c.id}"`) : q('', 'pin', 'Colocar', `data-act="place" data-id="${c.id}"`)}
+      ${q('', 'flag', 'Empezar por aquí', c.status === 'pending' && located(c) && !esSig ? `data-act="first" data-id="${c.id}"` : 'aria-disabled="true"')}
+    </div>
+    ${estado ? `<div class="state">${estado}</div>` : ''}
+    <div class="sh-sec">Notas de la ruta</div>
+    ${ns.length ? ns.map(x => `<div class="note"><div>${esc(x.texto)}<small>${esc(x.autor || 'Anónimo')} · ${hace(x.creada)}</small></div>
+        <button data-act="delnote" data-id="${x.id}" aria-label="Borrar nota">${ico('x', 'width:18px;height:18px')}</button></div>`).join('')
+      : '<p class="empty-notes">Sin notas. Apunta lo que le sirva al siguiente: horarios, dónde aparcar, con quién hablar.</p>'}
+    <form class="note-form" data-id="${c.id}"><input class="input" name="nota" maxlength="500" placeholder="Añadir nota" autocomplete="off" enterkeyhint="send">
+      <button class="btn primary" type="submit">Guardar</button></form>
+    <div class="pinfix"><span>¿El pin está mal?</span>
+      <button data-act="place" data-id="${c.id}">${located(c) ? 'Moverlo' : 'Colocarlo'}</button>
+      <button data-act="regeo" data-id="${c.id}">Ubicar por la dirección</button></div>`;
+}
+// ---------- Elegir el día de visita ----------
+function pintarDia(){
+  const cuenta = d => S.clients.filter(c => c.dia_visita === d).length;
+  const elegido = ui.diaTmp || fechaVista(), dsel = diaSemana(elegido);
+  $('#sheetBody').innerHTML = `
+    <div class="sh-head"><div style="flex:1"><h2 id="sheetTitle">Día de visita</h2>
+      <div class="addr">Elige el día y te cargo solo sus clientes, como en Telynet.</div></div>
+      <button class="btn icon" data-act="close" aria-label="Cerrar">${ico('x')}</button></div>
+    <label class="field" style="margin-top:18px"><span>Fecha</span>
+      <input class="input" type="date" id="fDia" value="${elegido}"></label>
+    <div class="dias">${[1,2,3,4,5,6,7].filter(d => d <= 5 || cuenta(d)).map(d => `
+      <button class="dia${d === dsel ? ' sel' : ''}" data-act="diasem" data-id="${d}" aria-pressed="${d === dsel}">
+        <b>${NOMBRE_DIA[d].slice(0, 3)}</b><span class="num">${cuenta(d)}</span></button>`).join('')}</div>
+    <button class="btn primary" style="width:100%;margin-top:18px" data-act="cargardia">${ico('list')}Cargar las visitas del ${NOMBRE_DIA[dsel]} · ${cuenta(dsel)}</button>
+    <button class="btn" style="width:100%;margin-top:10px" data-act="todos">Ver todos los clientes de la ruta</button>`;
+  $('#fDia').addEventListener('change', e => { if (e.target.value){ ui.diaTmp = e.target.value; pintarDia(); } });
+}
+function abrirDia(){ ui.diaTmp = null; abrirFicha('__dia'); }
+// Próxima fecha (desde hoy) que cae en ese día de la semana
+function proximaFecha(d){
+  const f = new Date(isoHoy() + 'T12:00:00');
+  while (((f.getDay() + 6) % 7) + 1 !== d) f.setDate(f.getDate() + 1);
+  return f.toLocaleDateString('sv-SE');
+}
+async function cargarDia(iso, todos){
+  S.fechaVista = iso; S.preguntado = isoHoy(); ui.todos = !!todos; ui.diaTmp = null;
+  cerrarFicha(); save();
+  renderCargando(1, 1, null, 'Preparando las visitas…');
+  await prepararMatriz(ui.me && ui.me.acc <= PRECISION_MALA ? ui.me : null);
+  recalcular(ui.me && ui.me.acc <= PRECISION_MALA ? ui.me : null);
+  render(true); fitMap();
+  toast(todos ? `Todos los clientes de la ruta: ${visibles().length}` : `Visitas del ${fmtFecha(iso)}: ${visibles().length} clientes`);
+}
+// ---------- Reiniciar la ruta del día ----------
+function reiniciarRuta(){
+  const marcados = visibles().filter(c => c.status !== 'pending');
+  if (!marcados.length) return;
+  if (!confirm(`Los ${marcados.length} clientes volverán a quedar pendientes, también para quien lleve la ruta ${SES.ruta} hoy. ¿Seguir?`)) return;
+  for (const c of marcados){ c.status = 'pending'; c.doneAt = 0; enviar('marcar_visita', {p_cliente: c.id, p_estado: 'pending'}); }
+  save(); reordenar();
+}
+// Arrastrar la hoja hacia abajo para cerrarla (sigue al dedo y respeta la velocidad)
+(function(){
+  let y0 = 0, dy = 0, t0 = 0, activo = false;
+  const sh = () => $('#sheet');
+  document.addEventListener('pointerdown', e => {
+    if (!e.target.closest('.grab')) return;
+    activo = true; y0 = e.clientY; dy = 0; t0 = performance.now(); sh().classList.add('drag');
+  });
+  document.addEventListener('pointermove', e => {
+    if (!activo) return;
+    dy = Math.max(0, e.clientY - y0);
+    sh().style.transform = `translateY(${dy}px)`;
+  });
+  const soltar = () => {
+    if (!activo) return; activo = false; sh().classList.remove('drag');
+    const v = dy / Math.max(1, performance.now() - t0);        // px por ms
+    if (dy > 120 || v > 0.6) cerrarFicha(); else sh().style.transform = '';
+  };
+  document.addEventListener('pointerup', soltar); document.addEventListener('pointercancel', soltar);
+})();
+
+function vistaVacia(){
+  return `<div class="empty">
+    <div class="icon-line">${ico('route')}</div>
+    <h2>La ruta ${esc(SES.ruta)} todavía no tiene clientes</h2>
+    <p>Los clientes de cada ruta los carga la oficina. Cuando estén, toca Actualizar.</p>
+    <div class="stack"><button class="btn primary" data-act="refresh">${ico('refresh')}Actualizar</button></div>
+  </div>`;
+}
+function renderCargando(hechos, total, nombre, texto){
+  const pct = total ? Math.round(hechos/total*100) : 0;
+  $('#listPane').innerHTML = `<div class="loading" role="status">
+    <h2>${texto || 'Ubicando clientes en el mapa…'}</h2>
+    <p class="num">${texto ? 'Un momento.' : `${hechos} de ${total}${nombre ? ' · ' + esc(nombre) : ''}. Solo pasa la primera vez.`}</p>
+    <div class="bar"><i style="transform:scaleX(${pct/100})"></i></div></div>`;
+}
+function renderMenu(){
+  const items = [['refresh', 'refresh', 'Actualizar']];
+  if (usaDias()) items.push(['dia', 'calendar', 'Cambiar el día de visita']);
+  if (!enModoApp()) items.push(['instalar', 'download', 'Instalar en la pantalla de inicio']);
+  $('#menu').innerHTML = items.map(([a, i, t]) => `<button role="menuitem" data-act="${a}">${ico(i)}${t}</button>`).join('')
+    + `<hr><button role="menuitem" data-act="logout">${ico('logout')}Salir de la ruta ${esc(SES ? SES.ruta : '')}</button>`;
+}
+
+// ---------- Mapa ----------
+let map = null, capa = null;
+const esAncho = () => matchMedia('(min-width:880px)').matches;
+function asegurarMapa(){
+  if (map || !window.L) return !!map;
+  if (!esAncho() && ui.view !== 'map') return false;
+  map = L.map('map').setView([43.2965, -2.989], 15);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom:19,
+    attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+  }).addTo(map);
+  capa = L.layerGroup().addTo(map);
+  map.on('click', e => {
+    if (!ui.placing) return;
+    ui.tmp = {lat:e.latlng.lat, lng:e.latlng.lng};
+    renderMapa(); pintarBanner();
+  });
+  setTimeout(fitMap, 50);
+  return true;
+}
+function renderMapa(){
+  if (!asegurarMapa()) return;
+  capa.clearLayers();
+  if (!S) return;
+  const sig = siguiente(), linea = [];
+  if (S.start && S.start.src === 'gps') linea.push([S.start.lat, S.start.lng]);
+  for (const id of S.order){
+    const c = byId(id); if (!c || !located(c) || c.id === ui.placing) continue;
+    const n = S.order.indexOf(id) + 1;
+    const tipo = c === sig ? 'next' : c.status === 'done' ? 'done' : c.status === 'skipped' ? 'skip' : '';
+    const size = tipo === 'next' ? 40 : 30;
+    const m = L.marker([c.lat, c.lng], {
+      icon: L.divIcon({className:'', html:`<div class="mk ${tipo}">${c.status === 'done' ? ico('check', 'width:15px;height:15px;margin-top:5px') : n}</div>`, iconSize:[size,size], iconAnchor:[size/2,size/2]}),
+      draggable:false, zIndexOffset: tipo === 'next' ? 1000 : c.status === 'done' ? -100 : 0, title:c.nombre
+    }).addTo(capa);
+    m.bindPopup(`<b>${esc(c.nombre)}</b><br>${esc(c.direccion)}<br><a href="${linkIr(c)}" target="_blank" rel="noopener">Ir con Google Maps</a>`);
+    if (c.status === 'pending') linea.push([c.lat, c.lng]);
+  }
+  // Pin en edición: el único que se puede arrastrar
+  if (ui.placing && ui.tmp){
+    const c = byId(ui.placing);
+    const m = L.marker([ui.tmp.lat, ui.tmp.lng], {draggable:true, zIndexOffset:2000, title:c.nombre,
+      icon: L.divIcon({className:'', html:`<div class="mk edit">${ico('pin', 'width:20px;height:20px;margin-top:9px')}</div>`, iconSize:[44,44], iconAnchor:[22,22]})}).addTo(capa);
+    m.on('dragend', e => { const p = e.target.getLatLng(); ui.tmp = {lat:p.lat, lng:p.lng}; pintarBanner(); });
+  }
+  if (linea.length > 1) L.polyline(linea, {color:'#1A5FD8', weight:3, opacity:.55, dashArray:'2 8', lineCap:'round'}).addTo(capa);
+  if (ui.me && ui.me.acc) L.circle([ui.me.lat, ui.me.lng], {radius:ui.me.acc, color:'#2B7BFF', weight:1, opacity:.5, fillOpacity:.08, interactive:false}).addTo(capa);
+  if (ui.me) L.marker([ui.me.lat, ui.me.lng], {icon:L.divIcon({className:'', html:'<div class="me"></div>', iconSize:[18,18], iconAnchor:[9,9]}), interactive:false}).addTo(capa);
+}
+function fitMap(){
+  if (!map || !S) return;
+  const pts = visibles().filter(located).map(c => [c.lat, c.lng]);
+  if (ui.me) pts.push([ui.me.lat, ui.me.lng]);
+  if (pts.length) map.fitBounds(pts, {padding:[40,40], maxZoom:17});
+}
+function verEnMapa(c){
+  cambiarVista('map');
+  setTimeout(() => { if (!map) return; map.setView([c.lat, c.lng], 18);
+    capa.eachLayer(l => { if (l.options && l.options.title === c.nombre) l.openPopup(); }); }, 80);
+}
+// Modo "mover pin": solo aquí se puede arrastrar. Nada se guarda hasta pulsar Guardar.
+function entrarColocar(c){
+  cerrarFicha();
+  ui.placing = c.id; ui.tmp = located(c) ? {lat:c.lat, lng:c.lng} : null;
+  cambiarVista('map'); pintarBanner(); renderMapa();
+  setTimeout(() => { if (!map) return; map.invalidateSize(); if (ui.tmp) map.setView([ui.tmp.lat, ui.tmp.lng], 18); else fitMap(); }, 60);
+}
+function pintarBanner(){
+  const c = byId(ui.placing); if (!c) return;
+  $('#placeText').textContent = ui.tmp ? `Arrastra el pin de ${c.nombre} o toca el mapa donde está` : `Toca el mapa donde está ${c.nombre}`;
+  $('#placeSave').disabled = !ui.tmp;
+  $('#placeBanner').hidden = false;
+}
+function salirColocar(){ ui.placing = null; ui.tmp = null; $('#placeBanner').hidden = true; renderMapa(); }
+function guardarColocar(){
+  const c = byId(ui.placing), p = ui.tmp; if (!c || !p) return;
+  const centro = centroRuta(c.id), lejos = centro ? dist(centro, p) : 0;
+  if (lejos > 3000 && !confirm(`Este pin queda a ${fmtDist(lejos)} del resto de la ruta. ¿Seguro que está ahí?`)) return;
+  const prev = located(c) ? {lat:c.lat, lng:c.lng, geo:c.geo} : null;
+  salirColocar();
+  fijarPosicion(c, p.lat, p.lng, 'manual');
+  toast(`Pin de ${c.nombre} guardado`, prev ? {label:'Deshacer', fn:() => fijarPosicion(c, prev.lat, prev.lng, prev.geo)} : {label:'Reordenar', fn:() => reordenar()});
+}
+
+// ---------- Vistas, menú y avisos ----------
+function cambiarVista(v){
+  ui.view = v; $('#app').dataset.view = v;
+  document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.view === v));
+  if (v === 'map'){ const nuevo = !map; asegurarMapa(); if (nuevo) renderMapa(); setTimeout(() => map && map.invalidateSize(), 30); }
+}
+let tTimer;
+function toast(texto, accion){
+  $('#toastText').textContent = texto;
+  const b = $('#toastAct');
+  if (accion){ b.hidden = false; b.textContent = accion.label; b.onclick = () => { $('#toast').classList.remove('show'); accion.fn(); }; }
+  else b.hidden = true;
+  $('#toast').classList.add('show');
+  clearTimeout(tTimer); tTimer = setTimeout(() => $('#toast').classList.remove('show'), accion ? 6000 : 3500);
+}
+function abrirMenu(abrir){ if (abrir) renderMenu(); $('#menu').hidden = !abrir; $('#btnMenu').setAttribute('aria-expanded', abrir); }
+async function reordenar(){
+  const b = $('#btnRecalc'), lbl = b.querySelector('span');
+  b.disabled = true; lbl.textContent = 'Buscando GPS…';
+  const pos = await miPosicion(l => { lbl.textContent = `GPS ±${l.acc} m…`; });
+  if (pos) ui.me = pos;
+  const bueno = pos && pos.acc <= PRECISION_MALA;
+  lbl.textContent = 'Calculando por calle…';
+  const calle = await prepararMatriz(bueno ? pos : null);
+  b.disabled = false; lbl.textContent = 'Ordenar desde aquí';
+  const pend = () => S.order.filter(id => byId(id).status === 'pending').join();
+  const antes = pend();
+  recalcular(pos); render(true);
+  if (!pos) return toast(motivoGPS(), {label:'Entendido', fn:() => {}});
+  if (!bueno) return toast(`Tu ubicación es poco precisa (±${pos.acc} m). Mejor elige tú por dónde empiezas.`);
+  if (!calle) return toast('No he podido calcular por calle ahora mismo. Ordeno en línea recta.');
+  toast(antes !== pend() ? `Orden actualizado andando desde donde estás (±${pos.acc} m)` : `El orden no cambia: ya era el más corto andando desde aquí (±${pos.acc} m)`);
+}
+async function actualizar(aviso){
+  try { await cargarRuta(); render(); if (aviso) toast('Ruta actualizada'); }
+  catch (e){ tratarError(e); }
+}
+
+// ---------- Eventos ----------
+document.addEventListener('click', async e => {
+  const el = e.target.closest('[data-act]');
+  if (!e.target.closest('#menu') && !e.target.closest('#btnMenu')) abrirMenu(false);
+  if (!el) return;
+  const id = el.dataset.id, act = el.dataset.act;
+  if (el.closest('#menu')) abrirMenu(false);
+  if (act === 'open') return abrirFicha(id);
+  if (act === 'close') return cerrarFicha();
+  if (act === 'done') return marcar(id, 'done');
+  if (act === 'skip') return marcar(id, 'skipped');
+  if (act === 'back') return marcar(id, 'pending');
+  if (act === 'first') return empezarPor(id);
+  if (act === 'see'){ cerrarFicha(); return verEnMapa(byId(id)); }
+  if (act === 'place'){ cerrarFicha(); return entrarColocar(byId(id)); }
+  if (act === 'delnote') return borrarNota(id);
+  if (act === 'regeo') return ubicarPorDireccion(id);
+  if (act === 'dia') return abrirDia();
+  if (act === 'diasem'){ ui.diaTmp = proximaFecha(+id); return pintarDia(); }
+  if (act === 'cargardia') return cargarDia(ui.diaTmp || fechaVista());
+  if (act === 'todos') return cargarDia(fechaVista(), true);
+  if (act === 'hoy') return cargarDia(isoHoy());
+  if (act === 'reiniciar') return reiniciarRuta();
+  if (act === 'instalar') return instalar();
+  abrirMenu(false);
+  if (act === 'refresh') return actualizar(true);
+  if (act === 'logout'){ if (confirm(`¿Salir de la ruta ${SES.ruta} en este dispositivo?`)) salir(); return; }
+});
+document.addEventListener('submit', e => {
+  const f = e.target.closest('.note-form'); if (!f) return;
+  e.preventDefault(); guardarNota(f.dataset.id, f.nota.value);
+});
+$('#loginForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const ruta = $('#fRuta').value.trim(), buzon = $('#fBuzon').value.trim(), autor = $('#fAutor').value;
+  $('#fRuta').setAttribute('aria-invalid', !ruta); $('#fBuzon').setAttribute('aria-invalid', !buzon);
+  if (!ruta || !buzon){ $('#loginError').textContent = 'Escribe la ruta y el buzón.'; return; }
+  const b = $('#btnEntrar'), lbl = b.querySelector('span'); b.disabled = true; lbl.textContent = 'Entrando…'; $('#loginError').textContent = '';
+  try {
+    await entrar(ruta, buzon, autor); store.set('gnv.autor', autor.trim()); store.set('gnv.ultimaRuta', ruta.toUpperCase());
+    $('#login').hidden = true; $('#fBuzon').value = ''; ui.recienEntrado = true;
+    await arrancar();
+  } catch (err){
+    if (err.message === 'DATOS_INCORRECTOS'){ $('#fBuzon').setAttribute('aria-invalid', true); $('#fBuzon').select(); }
+    $('#loginError').textContent = {
+      DATOS_INCORRECTOS: 'La ruta o el buzón no son correctos.',
+      RUTA_BLOQUEADA: 'Demasiados intentos fallidos. Espera 15 minutos y vuelve a probar.',
+      SIN_CONEXION: 'No hay conexión. Comprueba los datos móviles.'
+    }[err.message] || 'No se ha podido entrar: ' + err.message;
+  }
+  b.disabled = false; lbl.textContent = 'Entrar';
+});
+$('#btnEye').addEventListener('click', e => {
+  const f = $('#fBuzon'), ver = f.type === 'password';
+  f.type = ver ? 'text' : 'password';
+  e.currentTarget.setAttribute('aria-pressed', ver);
+  e.currentTarget.setAttribute('aria-label', ver ? 'Ocultar el buzón' : 'Mostrar el buzón');
+  e.currentTarget.querySelector('use').setAttribute('href', ver ? '#i-eye-off' : '#i-eye');
+});
+['#fRuta', '#fBuzon'].forEach(id => $(id).addEventListener('input', e => e.target.removeAttribute('aria-invalid')));
+$('#btnMenu').addEventListener('click', () => abrirMenu($('#menu').hidden));
+$('#btnRecalc').addEventListener('click', reordenar);
+$('#btnFit').addEventListener('click', fitMap);
+$('#placeCancel').addEventListener('click', salirColocar);
+$('#placeSave').addEventListener('click', guardarColocar);
+document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => cambiarVista(b.dataset.view)));
+document.addEventListener('keydown', e => { if (e.key === 'Escape'){ abrirMenu(false); salirColocar(); cerrarFicha(); } });
+$('#scrim').addEventListener('click', () => cerrarFicha());
+window.addEventListener('popstate', () => { if (ui.ficha) cerrarFicha(true); });
+matchMedia('(min-width:880px)').addEventListener('change', () => { asegurarMapa(); renderMapa(); map && setTimeout(() => map.invalidateSize(), 30); });
+// Al volver a la app: si ha pasado mucho rato, recarga entera; si no, solo los cambios
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden || !SES || !S) return;
+  if (S.fecha !== new Date().toLocaleDateString('sv-SE', {timeZone:'Europe/Madrid'}) || Date.now() - S.cargada > 30*60000) actualizar();
+  else { vaciarCola(); traerCambios(); }
+});
+window.addEventListener('online', () => { vaciarCola(); traerCambios(); });
+setInterval(() => { if (!document.hidden){ vaciarCola(); traerCambios(); } }, 90000);
+
+// ---------- Instalar en la pantalla de inicio ----------
+let avisoInstalar = null;                          // Android/Chrome nos da un "botón de instalar" listo
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); avisoInstalar = e; });
+window.addEventListener('appinstalled', () => { avisoInstalar = null; toast('App instalada. Ábrela desde el icono de tu pantalla de inicio.'); });
+const enModoApp = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const esIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+async function instalar(){
+  if (avisoInstalar){ avisoInstalar.prompt(); await avisoInstalar.userChoice; avisoInstalar = null; return; }
+  abrirFicha('__instalar');                        // iPhone o navegadores sin botón: explicamos los pasos
+}
+function pintarInstalar(){
+  const ios = esIOS(), chromeIOS = /crios/i.test(navigator.userAgent);
+  const pasos = ios ? [
+      chromeIOS ? `Toca ${ico('share')} <b>Compartir</b>, arriba a la derecha junto a la dirección web.` : `Toca ${ico('share')} <b>Compartir</b> en la barra de abajo de Safari.`,
+      `Baja y toca ${ico('plus-sq')} <b>Añadir a pantalla de inicio</b>.`,
+      'Pulsa <b>Añadir</b>. Ya tienes el icono de <b>Rutas</b> junto a tus apps.'
+    ] : [
+      'Toca los <b>tres puntos ⋮</b> de Chrome, arriba a la derecha.',
+      `Toca ${ico('download')} <b>Instalar aplicación</b> o <b>Añadir a pantalla de inicio</b>.`,
+      'Confirma. Ya tienes el icono de <b>Rutas</b> junto a tus apps.'
+    ];
+  $('#sheetBody').innerHTML = `
+    <div class="sh-head"><div style="flex:1"><h2 id="sheetTitle">Instalar la app</h2>
+      <div class="addr">Tendrás un icono en el móvil y se abrirá a pantalla completa, sin barras del navegador.</div></div>
+      <button class="btn icon" data-act="close" aria-label="Cerrar">${ico('x')}</button></div>
+    <ol class="install-steps">${pasos.map(p => `<li><div>${p}</div></li>`).join('')}</ol>`;
+}
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(() => {});
+
+// ---------- Arranque ----------
+async function arrancar(){
+  S = store.get(keyRuta(), null);              // primero lo guardado: la app abre al instante
+  aplicarCola();
+  render();
+  if (!S) renderCargando(0, 1, null, 'Cargando la ruta…');
+  try {
+    await cargarRuta(); render(); fitMap(); vaciarCola();
+    // Orden recién creado (otro día o ruta nueva): lo rehacemos andando por calle en segundo plano
+    if (usaDias() && (S.preguntado !== isoHoy() || ui.recienEntrado)) abrirDia();
+    else if (ui.ordenNuevo && !S.matriz && await prepararMatriz(null)){ recalcular(null); render(true); }
+    ui.recienEntrado = false;
+  }
+  catch (e){ if (S) render(); else $('#listPane').innerHTML = `<div class="notice">${ico('cloud-off')}<div>No he podido cargar la ruta. Comprueba la conexión y toca <b>Actualizar</b> en el menú.</div></div>`; tratarError(e); }
+}
+cabecera();
+if (SES) arrancar(); else mostrarLogin();
+</script>
+</body>
+</html>
