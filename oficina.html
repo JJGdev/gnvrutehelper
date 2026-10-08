@@ -3,10 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#ffffff">
+<meta name="theme-color" content="#F7F8FA">
 <meta name="robots" content="noindex">
 <title>Oficina · GnvRuteHelper</title>
 <link rel="icon" type="image/png" href="icons/favicon-64.png">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
 
 /* ============================================================
@@ -160,7 +161,7 @@ button{font:inherit;color:inherit}
 .sheet-body{overflow-y:auto;overscroll-behavior:contain;padding:6px 20px 22px}
 .sh-head{display:flex;gap:12px;align-items:flex-start}
 .sh-head .n{margin-top:3px}
-.sh-head h2{font-size:22px;line-height:1.2;margin:0;letter-spacing:-.015em;flex:1}
+.sh-head h2{font-size:22px;line-height:1.3;margin:0;letter-spacing:-.015em;flex:1}
 .sh-head .addr{color:var(--ink-3);font-size:15px;margin-top:3px}
 .sh-head .btn.icon{margin:-6px -10px 0 0;color:var(--ink-3)}
 .quick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:20px 0 6px}
@@ -301,66 +302,200 @@ button{font:inherit;color:inherit}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
 /* ============================================================
-   OFICINA
+   PANEL DE OFICINA
    ============================================================ */
-.of-main{position:fixed;inset:0;display:flex;flex-direction:column}
-.of-main .list-pane{position:relative;flex:1;padding:18px 16px calc(40px + env(safe-area-inset-bottom,0px))}
-.of-wrap{max-width:760px;margin:0 auto}
-.code{flex:none;min-width:52px;height:36px;padding:0 10px;border-radius:10px;background:var(--accent-soft);color:var(--accent-ink);font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;letter-spacing:.02em}
-.row.ruta .row-main{padding-bottom:6px}
-.ruta-acc{display:flex;gap:8px;padding:0 14px 14px 78px;flex-wrap:wrap}
-.warn{color:var(--warn);font-weight:700}
-.help{background:var(--surface);border-radius:var(--r);box-shadow:var(--sh-1);padding:16px 18px;margin-top:24px;color:var(--ink-2);font-size:15px}
-.help h3{margin:0 0 8px;font-size:15px;color:var(--ink)}
-.help p{margin:0 0 8px}
-.help p:last-child{margin:0}
-.drop{display:flex;flex-direction:column;align-items:center;gap:6px;border:2px dashed var(--line-2);border-radius:var(--r);padding:28px 16px;margin-top:6px;cursor:pointer;color:var(--accent);text-align:center;transition:background-color .15s ease,border-color .15s ease}
-.drop:hover,.drop:active{background:var(--accent-soft);border-color:var(--accent)}
-.drop b{font-size:17px}
-.drop span{font-size:14px;color:var(--ink-3)}
-.resumen{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:18px 0 12px}
-.resumen div{background:var(--sunken);border-radius:var(--r-sm);padding:12px;text-align:center}
-.resumen b{display:block;font-size:24px;letter-spacing:-.02em}
-.resumen span{font-size:13px;color:var(--ink-3)}
-.preview{list-style:none;margin:12px 0 0;padding:0;border-radius:var(--r-sm);background:var(--sunken);overflow:hidden}
-.preview li{padding:9px 12px;font-size:14px;display:flex;flex-direction:column}
-.preview li + li{border-top:1px solid var(--line)}
-.preview li span{color:var(--ink-3)}
-.preview .mas{color:var(--ink-3)}
-.sheet .addr{color:var(--ink-3);font-size:15px}
-@media (max-width:520px){.ruta-acc{padding-left:14px}}
+:root{--side:#F7F8FA;--row-hover:#F7F9FC;--d1:#1859D6;--d2:#0E8F7E;--d3:#B7591B;--d4:#7A47C9;--d5:#C2365B;--d6:#5E6879;--d7:#5E6879}
+body.admin{font-size:15px}
+.adm{position:fixed;inset:0;display:grid;grid-template-columns:248px 1fr;background:var(--bg)}
+.adm[hidden]{display:none!important}
+/* barra lateral */
+.side{background:var(--side);box-shadow:inset -1px 0 0 var(--line);display:flex;flex-direction:column;padding:calc(18px + env(safe-area-inset-top,0px)) 12px 14px;min-height:0}
+.brand{display:flex;align-items:center;gap:10px;padding:2px 10px 18px;font-weight:750;font-size:15px;letter-spacing:-.005em}
+.brand img{width:30px;height:30px;border-radius:8px}
+.brand small{display:block;font-weight:500;color:var(--ink-3);font-size:12.5px;letter-spacing:0}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav button{display:flex;align-items:center;gap:11px;width:100%;min-height:40px;padding:0 10px;border:0;border-radius:9px;background:none;cursor:pointer;
+  font-size:14.5px;font-weight:550;color:var(--ink-2);text-align:left;transition:background-color .15s ease,color .15s ease}
+.nav button .ico{width:19px;height:19px}
+.nav button:hover{background:#ECEFF4;color:var(--ink)}
+.nav button[aria-current="page"]{background:var(--surface);color:var(--accent-ink);box-shadow:0 1px 2px rgba(16,24,40,.06),0 0 0 1px var(--line)}
+.nav button[aria-current="page"] .ico{color:var(--accent)}
+.nav .cnt{margin-left:auto;font-size:12px;font-weight:650;color:var(--ink-3)}
+.side .grow{flex:1}
+.me-card{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;background:var(--surface);box-shadow:0 0 0 1px var(--line)}
+.avatar{width:32px;height:32px;border-radius:16px;background:var(--accent-soft);color:var(--accent-ink);font-weight:750;font-size:13px;display:flex;align-items:center;justify-content:center;flex:none;text-transform:uppercase}
+.me-card .who{flex:1;min-width:0;line-height:1.35}
+.me-card .who b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.me-card .who span{font-size:12.5px;color:var(--ink-3)}
+.me-card .btn.icon{width:36px;min-height:36px;color:var(--ink-3)}
+/* contenido */
+.mainc{overflow-y:auto;min-width:0;overscroll-behavior:contain}
+.page{max-width:1180px;margin:0 auto;padding:calc(26px + env(safe-area-inset-top,0px)) 32px 56px}
+.ph{display:flex;align-items:flex-end;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+.ph .t{flex:1;min-width:240px}
+.ph h1{font-size:24px;line-height:1.3;margin:0;letter-spacing:-.02em}
+.ph p{margin:4px 0 0;color:var(--ink-3);font-size:14.5px}
+.ph .acts{display:flex;gap:8px;flex-wrap:wrap}
+.crumb{border:0;background:none;padding:0;margin:0 0 6px;color:var(--ink-3);font-size:13.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px}
+.crumb:hover{color:var(--accent)}
+.crumb .ico{width:16px;height:16px;transform:rotate(180deg)}
+.btn.sm{min-height:38px;padding:0 13px;font-size:14px;border-radius:9px;gap:7px}
+.btn.sm .ico{width:18px;height:18px}
+.btn.out{background:var(--surface);box-shadow:inset 0 0 0 1px var(--line-2)}
+.btn.out:hover{background:#F4F6F9}
+.btn.danger{color:var(--danger)}
+/* tira de cifras */
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--surface);border-radius:var(--r);box-shadow:var(--sh-1);margin-bottom:22px;overflow:hidden}
+.stat{padding:16px 18px;position:relative}
+.stat + .stat::before{content:"";position:absolute;left:0;top:16px;bottom:16px;width:1px;background:var(--line)}
+.stat span{display:block;font-size:13px;color:var(--ink-3);font-weight:550}
+.stat b{display:block;font-size:26px;letter-spacing:-.02em;margin-top:4px;font-weight:700}
+.stat b small{font-size:15px;color:var(--ink-3);font-weight:550;letter-spacing:0}
+.stat.alert b{color:var(--warn)}
+/* tarjetas y tablas */
+.card{background:var(--surface);border-radius:var(--r);box-shadow:var(--sh-1);margin-bottom:22px;overflow:hidden}
+.card-h{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.card-h h2{font-size:15.5px;margin:0;flex:1;min-width:140px}
+.card-h .muted{font-size:13.5px;color:var(--ink-3)}
+.card-b{padding:16px 18px}
+.tw{overflow-x:auto}
+table.t{width:100%;border-collapse:collapse;font-size:14px}
+.t th{text-align:left;font-size:12.5px;font-weight:650;color:var(--ink-3);padding:10px 14px;background:#FAFBFC;border-bottom:1px solid var(--line);white-space:nowrap}
+.t th:first-child,.t td:first-child{padding-left:18px}
+.t th:last-child,.t td:last-child{padding-right:18px}
+.t td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
+.t tr:last-child td{border-bottom:0}
+.t tbody tr{transition:background-color .12s ease}
+.t tbody tr.click{cursor:pointer}
+.t tbody tr.click:hover{background:var(--row-hover)}
+.t td.r{text-align:right}
+.t td.num{font-variant-numeric:tabular-nums}
+.t th.r{text-align:right}
+.t .sub{display:block;font-size:12.5px;color:var(--ink-3);margin-top:1px}
+.t .off td{color:var(--ink-3)}
+.codeb{display:inline-flex;align-items:center;justify-content:center;min-width:46px;height:28px;padding:0 8px;border-radius:7px;background:var(--accent-soft);color:var(--accent-ink);font-weight:800;font-size:13px;letter-spacing:.02em}
+.codeb.big{height:40px;min-width:62px;font-size:17px;border-radius:10px}
+.prog{display:flex;align-items:center;gap:10px;min-width:180px}
+.prog .bar{flex:1;height:7px;background:#E9EDF2}
+.prog .bar i{background:var(--accent-2)}
+.prog.ok .bar i{background:var(--ok)}
+.prog span{font-size:13px;color:var(--ink-2);min-width:52px;text-align:right;font-variant-numeric:tabular-nums}
+.badge{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 9px;border-radius:12px;font-size:12.5px;font-weight:650;white-space:nowrap;background:var(--sunken);color:var(--ink-2)}
+.badge::before{content:"";width:6px;height:6px;border-radius:3px;background:currentColor;opacity:.85}
+.badge.plain::before{display:none}
+.badge.ok{background:var(--ok-soft);color:var(--ok)}
+.badge.warn{background:var(--warn-soft);color:var(--warn)}
+.badge.bad{background:#FDECEA;color:var(--danger)}
+.badge.info{background:var(--accent-soft);color:var(--accent-ink)}
+.days{display:flex;gap:3px}
+.days i{font-style:normal;display:inline-flex;flex-direction:column;align-items:center;min-width:24px;font-size:11px;color:var(--ink-3);line-height:1.35}
+.days i b{font-size:13px;color:var(--ink);font-weight:650}
+.days i.z b{color:var(--line-2)}
+.dot{display:inline-block;width:9px;height:9px;border-radius:5px;margin-right:6px;vertical-align:0}
+.attn{list-style:none;margin:0;padding:0}
+.attn li{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--line);font-size:14px}
+.attn li:last-child{border-bottom:0}
+.attn li .ico{color:var(--warn);width:20px;height:20px}
+.attn li div{flex:1}
+.attn-ok{display:flex;align-items:center;gap:10px;padding:16px 18px;color:var(--ok);font-weight:600;font-size:14px}
+/* barra de herramientas de tablas */
+.tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px 18px;border-bottom:1px solid var(--line)}
+.search{position:relative;flex:1;min-width:200px;max-width:340px}
+.search .ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--ink-3)}
+.search .input{height:38px;padding-left:36px;font-size:14.5px;border-radius:9px}
+.seg{display:inline-flex;background:var(--sunken);border-radius:9px;padding:3px;gap:2px;flex-wrap:wrap}
+.seg button{border:0;background:none;height:32px;padding:0 10px;border-radius:7px;font-size:13.5px;font-weight:600;color:var(--ink-2);cursor:pointer;white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(16,24,40,.08)}
+.seg button span{color:var(--ink-3);font-weight:500;margin-left:3px}
+.chk{display:inline-flex;align-items:center;gap:7px;font-size:13.5px;color:var(--ink-2);cursor:pointer;user-select:none}
+.chk input{width:16px;height:16px;accent-color:var(--accent)}
+.tabsb{display:flex;gap:4px;border-bottom:1px solid var(--line);padding:0 12px;overflow-x:auto}
+.tabsb button{border:0;background:none;height:46px;padding:0 10px;font-size:14px;font-weight:600;color:var(--ink-3);cursor:pointer;box-shadow:inset 0 -2px 0 transparent;white-space:nowrap}
+.tabsb button[aria-selected="true"]{color:var(--accent-ink);box-shadow:inset 0 -2px 0 var(--accent)}
+.tabsb button span{font-weight:500;margin-left:4px}
+.amap{height:520px;background:#E5E9EF;position:relative}
+.amap .legend{position:absolute;left:12px;bottom:12px;z-index:500;background:var(--surface);border-radius:10px;box-shadow:var(--sh-2);padding:8px 12px;font-size:13px;display:flex;gap:12px;flex-wrap:wrap}
+.pinmk{width:14px;height:14px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.35)}
+.emptyb{padding:36px 18px;text-align:center;color:var(--ink-3);font-size:14.5px}
+.emptyb b{display:block;color:var(--ink);font-size:16px;margin-bottom:4px}
+.skel{height:14px;border-radius:7px;background:linear-gradient(90deg,#EEF1F5 0,#F6F8FA 50%,#EEF1F5 100%);background-size:200% 100%;animation:sk 1.2s linear infinite}
+@keyframes sk{to{background-position:-200% 0}}
+.notes-l .nt{display:flex;gap:12px;padding:12px 18px;border-bottom:1px solid var(--line);font-size:14px}
+.notes-l .nt:last-child{border-bottom:0}
+.notes-l .nt div{flex:1}
+.notes-l .nt small{display:block;color:var(--ink-3);font-size:12.5px;margin-top:2px}
+/* panel lateral (en escritorio) / hoja (en móvil) */
+@media (min-width:900px){
+  .adm-sheet{left:auto;top:0;right:0;bottom:0;margin:0;width:460px;max-width:none;max-height:none;border-radius:0;transform:translateX(100%);padding-bottom:0}
+  .adm-sheet.show{transform:translateX(0)}
+  .adm-sheet .grab{display:none}
+  .adm-sheet .sheet-body{padding:22px 24px 28px;flex:1}
+}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;margin-top:18px}
+.form-grid .full{grid-column:1/-1}
+select.input{padding-right:34px;background-image:linear-gradient(45deg,transparent 50%,var(--ink-3) 50%),linear-gradient(135deg,var(--ink-3) 50%,transparent 50%);
+  background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;background-size:5px 5px;background-repeat:no-repeat}
+.minimap{height:220px;border-radius:var(--r-sm);overflow:hidden;background:#E5E9EF;margin-top:6px;position:relative}
+.pinrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13.5px;color:var(--ink-3);margin-top:8px}
+.pinrow .btn{min-height:34px;font-size:13.5px}
+.sheet .field > span:first-child{font-size:13.5px}
+.sheet .input{font-size:16px;height:46px}
+.hint{font-size:13px;color:var(--ink-3);margin:-8px 0 14px}
+.danger-zone{margin-top:26px;padding-top:18px;border-top:1px solid var(--line)}
+.rolecards{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.rolecards label{display:block;border-radius:var(--r-sm);box-shadow:inset 0 0 0 1px var(--line-2);padding:12px;cursor:pointer;font-size:13px;color:var(--ink-3)}
+.rolecards label b{display:block;color:var(--ink);font-size:14.5px;margin-bottom:2px}
+.rolecards input{position:absolute;opacity:0;pointer-events:none}
+.rolecards label:has(input:checked){box-shadow:inset 0 0 0 2px var(--accent);background:var(--accent-soft)}
+.rolecards label:has(input:focus-visible){outline:2px solid var(--accent-2);outline-offset:2px}
+/* responsive */
+@media (max-width:1100px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.stat:nth-child(3)::before{display:none}.stat:nth-child(n+3){border-top:1px solid var(--line)}}
+@media (max-width:899px){
+  .adm{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+  .side{flex-direction:row;align-items:center;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px;gap:8px;overflow-x:auto}
+  .brand{padding:0 6px 0 0}.brand small{display:none}
+  .nav{flex-direction:row}
+  .nav button{min-height:38px;white-space:nowrap}
+  .nav .cnt{display:none}
+  .side .grow{display:none}
+  .me-card{padding:4px;box-shadow:none;background:none}.me-card .who{display:none}
+  .page{padding:20px 14px 48px}
+  .hide-m{display:none}
+}
 </style>
 </head>
-<body>
+<body class="admin">
 <div class="login" id="login" hidden>
   <header class="login-hero">
     <div class="login-copy">
       <div class="wordmark"><svg class="ico"><use href="#i-route"/></svg>GnvRuteHelper · Oficina</div>
-      <h1 style="margin-top:22px">Rutas y clientes</h1>
-      <p>Crea rutas, cambia buzones y carga el Excel de clientes de cada ruta.</p>
+      <h1 style="margin-top:22px">Todas las rutas, en un panel.</h1>
+      <p>Progreso del día, clientes, cargas de Excel y accesos.</p>
     </div>
   </header>
   <form class="login-card" id="loginForm" novalidate>
-    <label class="field"><span>Clave de oficina</span>
-      <span class="pw"><input class="input" id="fClave" type="password" autocomplete="current-password" required>
-      <button type="button" class="eye" id="btnEye" aria-label="Mostrar la clave" aria-pressed="false"><svg class="ico"><use href="#i-eye"/></svg></button></span></label>
+    <label class="field"><span>Usuario</span><input class="input" id="fUsuario" name="usuario" autocapitalize="none" autocomplete="username" spellcheck="false" required></label>
+    <label class="field"><span>Contraseña</span>
+      <span class="pw"><input class="input" id="fClave" name="clave" type="password" autocomplete="current-password" required>
+      <button type="button" class="eye" id="btnEye" aria-label="Mostrar la contraseña" aria-pressed="false"><svg class="ico"><use href="#i-eye"/></svg></button></span></label>
     <p class="form-error" id="loginError" role="alert"></p>
     <button class="btn primary" id="btnEntrar" type="submit"><span>Entrar</span><svg class="ico"><use href="#i-arrow"/></svg></button>
-    <p class="login-foot"><a href="./">Volver a la app de rutas</a></p>
+    <p class="login-foot"><a href="./">Ir a la app de rutas</a></p>
   </form>
 </div>
 
-<div class="of-main" id="app" hidden>
-  <header class="top">
-    <div class="title"><h1>Oficina</h1><div class="sub">GnvRuteHelper</div></div>
-    <button class="btn small" data-act="nueva" style="background:var(--accent-soft);color:var(--accent-ink)"><svg class="ico"><use href="#i-plus-sq"/></svg>Nueva ruta</button>
-    <button class="btn icon ghost" data-act="salir" aria-label="Salir"><svg class="ico"><use href="#i-logout"/></svg></button>
-  </header>
-  <main class="list-pane"><div class="of-wrap" id="lista"></div></main>
+<div class="adm" id="app" hidden>
+  <aside class="side">
+    <div class="brand"><img src="icons/icon-192.png" alt=""><div>GnvRuteHelper<small>Oficina</small></div></div>
+    <nav class="nav" id="nav" aria-label="Secciones"></nav>
+    <div class="grow"></div>
+    <div class="me-card" id="meCard"></div>
+  </aside>
+  <main class="mainc"><div class="page" id="page"></div></main>
 </div>
 
 <div class="scrim" id="scrim" hidden></div>
-<section class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+<section class="sheet adm-sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
   <div class="grab" aria-hidden="true"><i></i></div>
   <div class="sheet-body" id="sheetBody"></div>
 </section>
@@ -395,18 +530,25 @@ button{font:inherit;color:inherit}
   <symbol id="i-download" viewBox="0 0 24 24"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M7 11l5 5l5-5M12 4v12"/></symbol>
   <symbol id="i-share" viewBox="0 0 24 24"><path d="M8 9h-1a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1M12 14v-11M9 6l3-3l3 3"/></symbol>
   <symbol id="i-plus-sq" viewBox="0 0 24 24"><path d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-14a2 2 0 0 1-2-2zM9 12h6M12 9v6"/></symbol>
-  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M7 7h-1a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-1"/><path d="M20.385 6.585a2.1 2.1 0 0 0-2.97-2.97l-8.415 8.385v3h3l8.385-8.415zM16 5l3 3"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 13a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1zM15 9a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1zM9 5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1zM4 20h14"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0-8 0M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2M16 3.13a4 4 0 0 1 0 7.75M21 21v-2a4 4 0 0 0-3-3.85"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0-8 0M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0-14 0M21 21l-6-6"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><path d="M16.555 3.843l3.602 3.602a2.877 2.877 0 0 1 0 4.069l-2.643 2.643a2.877 2.877 0 0 1-4.069 0l-.301-.301l-6.558 6.558a2 2 0 0 1-1.239.578l-.175.008h-1.172a1 1 0 0 1-.993-.883l-.007-.117v-1.172a2 2 0 0 1 .467-1.284l.119-.13l.414-.414h2v-2h2v-2l2.144-2.144l-.301-.301a2.877 2.877 0 0 1 0-4.069l2.643-2.643a2.877 2.877 0 0 1 4.069 0zM15 9h.01"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><path d="M5 13a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-10a2 2 0 0 1-2-2v-6zM11 16a1 1 0 1 0 2 0a1 1 0 0 0-2 0M8 11v-4a4 4 0 1 1 8 0v4"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6l-12 12M6 6l12 12"/></symbol>
   <symbol id="i-calendar" viewBox="0 0 24 24"><path d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-12a2 2 0 0 1-2-2v-12z"/><path d="M16 3v4M8 3v4M4 11h16"/></symbol>
 </svg>
 
 
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 /* =====================================================================
-   GnvRuteHelper · Oficina
-   Solo para la oficina: crear rutas, cambiar buzones y cargar el Excel de clientes.
-   Se entra con la clave de oficina (no con ruta + buzón).
+   GnvRuteHelper · Panel de oficina
+   Administradores y coordinadores gestionan aquí todas las rutas.
+   Cada pantalla tiene su dirección (#/resumen, #/rutas, #/ruta/1QA…),
+   así el botón "atrás" del navegador funciona como se espera.
    ===================================================================== */
 const SUPABASE_URL = 'https://dwzuasbezvemzmokcnrn.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR3enVhc2JlenZlbXptb2tjbnJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0NzA4NTQsImV4cCI6MjEwNzA0Njg1NH0.7J5plux3nW_MnnjLvcI2DWROCcL6tsyb_fCks75j_Yw';
@@ -420,38 +562,51 @@ async function rpc(fn, args){
   if (!r.ok){ let m = 'ERROR'; try { m = JSON.parse(txt).message || m; } catch {} throw new Error(m); }
   return txt ? JSON.parse(txt) : null;
 }
-const store = {
-  get(k, d){ try { return JSON.parse(sessionStorage.getItem(k)) ?? d; } catch { return d; } },   // la sesión de oficina se borra al cerrar el navegador
-  set(k, v){ try { (k === 'gnv.geo.v2' ? localStorage : sessionStorage).setItem(k, JSON.stringify(v)); } catch {} },   // las direcciones ya buscadas sí se guardan
+const store = {   // la sesión de oficina se borra al cerrar el navegador; las direcciones buscadas se guardan siempre
+  get(k, d){ try { return JSON.parse((k === 'gnv.geo.v2' ? localStorage : sessionStorage).getItem(k)) ?? d; } catch { return d; } },
+  set(k, v){ try { (k === 'gnv.geo.v2' ? localStorage : sessionStorage).setItem(k, JSON.stringify(v)); } catch {} },
   del(k){ try { sessionStorage.removeItem(k); } catch {} }
 };
-const geoStore = { get(k, d){ try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
-                   set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
 const KEY_GEO = 'gnv.geo.v2';
-let geoCache = geoStore.get(KEY_GEO, {});
-let TOKEN = store.get('gnv.oficina', null);
-let RUTAS = [];
-const ui = { hoja:null, imp:null };
+let geoCache = store.get(KEY_GEO, {});
+let TOKEN = store.get('gnv.oficina2', null), YO = store.get('gnv.oficina.yo', null);
+let R = null, RUTA = null, USUARIOS = null;
+const ui = { hoja:null, imp:null, q:'', dia:'todos', bajas:false, minimapa:null, mapa:null };
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ico = (id, st) => `<svg class="ico" aria-hidden="true"${st ? ` style="${st}"` : ''}><use href="#i-${id}"/></svg>`;
 const norm = s => String(s ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
 const addrKey = c => norm(`${c.direccion}|${c.poblacion}`);
 const pausa = ms => new Promise(r => setTimeout(r, ms));
-const store_geo = () => geoStore.set(KEY_GEO, geoCache);
+const esAdmin = () => YO && YO.rol === 'admin';
 const NOMBRE_DIA = ['', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
+const CORTO = ['', 'L', 'M', 'X', 'J', 'V', 'S', 'D'];
+const COLOR_DIA = ['#5E6879', '#1859D6', '#0E8F7E', '#B7591B', '#7A47C9', '#C2365B', '#5E6879', '#5E6879'];
+const pl = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
 function hace(fecha){
-  if (!fecha) return 'nunca';
+  if (!fecha) return '—';
   const s = (Date.now() - new Date(fecha)) / 1000;
-  if (s < 3600) return `hace ${Math.max(1, Math.round(s/60))} min`;
+  if (s < 60) return 'ahora';
+  if (s < 3600) return `hace ${Math.round(s/60)} min`;
   if (s < 86400) return `hace ${Math.round(s/3600)} h`;
   return new Intl.DateTimeFormat('es-ES', {day:'numeric', month:'short'}).format(new Date(fecha));
 }
+const hora = f => f ? new Intl.DateTimeFormat('es-ES', {hour:'2-digit', minute:'2-digit'}).format(new Date(f)) : '—';
 let tTimer;
 function toast(t){ $('#toastText').textContent = t; $('#toastAct').hidden = true; $('#toast').classList.add('show');
-  clearTimeout(tTimer); tTimer = setTimeout(() => $('#toast').classList.remove('show'), 4000); }
+  clearTimeout(tTimer); tTimer = setTimeout(() => $('#toast').classList.remove('show'), 3800); }
+const ERRORES = {
+  SOLO_ADMIN:'Eso solo puede hacerlo un administrador.', CODIGO_NO_VALIDO:'El código de ruta solo admite letras y números (de 2 a 10).',
+  FALTA_BUZON:'Una ruta nueva necesita buzón.', RUTA_NO_EXISTE:'Esa ruta ya no existe.', USUARIO_NO_VALIDO:'El usuario solo admite letras, números, punto y guion (de 3 a 30).',
+  CLAVE_CORTA:'La contraseña debe tener al menos 4 caracteres.', NO_A_TI_MISMO:'No puedes quitarte a ti mismo el rol de administrador ni desactivarte.',
+  CLAVE_ACTUAL_MAL:'La contraseña actual no es correcta.', CLIENTE_NO_EXISTE:'Ese cliente ya no existe.'
+};
+function tratarError(e){
+  if (e.message === 'SESION_CADUCADA') return salir('La sesión ha caducado. Vuelve a entrar.');
+  toast(e.red ? 'Sin conexión. Inténtalo en un momento.' : (ERRORES[e.message] || 'Algo ha fallado: ' + e.message));
+}
 
-// ---------- Lectura de Excel y direcciones (igual que en la app) ----------
+// ---------- Excel y direcciones (las mismas piezas que la app) ----------
 // ---------- Direcciones a coordenadas (OpenStreetMap / Nominatim, 1 consulta por segundo) ----------
 async function buscarDireccion(c){
   const junta = (...p) => p.filter(Boolean).join(', ');
@@ -546,122 +701,358 @@ function mapearColumnas(filas){
 
 
 // ---------- Entrar / salir ----------
-async function entrar(clave){
-  const r = await rpc('oficina_entrar', {p_clave: clave});
+async function entrar(usuario, clave){
+  const r = await rpc('oficina_entrar', {p_usuario: usuario, p_clave: clave});
   if (r.error) throw new Error(r.error);
-  TOKEN = r.token; store.set('gnv.oficina', TOKEN);
+  TOKEN = r.token; YO = {usuario:r.usuario, nombre:r.nombre, rol:r.rol};
+  store.set('gnv.oficina2', TOKEN); store.set('gnv.oficina.yo', YO);
 }
 function salir(msg){
   if (TOKEN) rpc('oficina_salir', {p_token: TOKEN}).catch(() => {});
-  TOKEN = null; store.del('gnv.oficina');
+  TOKEN = null; YO = null; R = RUTA = USUARIOS = null; store.del('gnv.oficina2'); store.del('gnv.oficina.yo');
+  cerrarHoja(true);
   $('#app').hidden = true; $('#login').hidden = false;
-  $('#loginError').textContent = msg || ''; setTimeout(() => $('#fClave').focus(), 300);
-}
-function tratarError(e){
-  if (e.message === 'SESION_CADUCADA') return salir('La sesión ha caducado. Vuelve a entrar.');
-  toast(e.red ? 'Sin conexión. Inténtalo en un momento.' : 'Algo ha fallado: ' + ({CODIGO_NO_VALIDO:'el código de ruta solo admite letras y números (2 a 10)', FALTA_BUZON:'una ruta nueva necesita buzón', RUTA_NO_EXISTE:'esa ruta no existe'}[e.message] || e.message));
+  $('#loginError').textContent = msg || ''; setTimeout(() => $('#fUsuario').focus(), 300);
 }
 
-// ---------- Lista de rutas ----------
-async function cargarRutas(){
-  try { RUTAS = await rpc('oficina_rutas', {p_token: TOKEN}); pintar(); }
-  catch (e){ tratarError(e); }
+// ---------- Navegación ----------
+function ruta(){
+  const p = (location.hash.replace(/^#\/?/, '') || 'resumen').split('/');
+  return {vista: p[0], codigo: p[1] ? decodeURIComponent(p[1]) : null, tab: p[2] || 'clientes'};
 }
-function pintar(){
-  const total = RUTAS.reduce((a, r) => a + r.clientes, 0);
-  $('#lista').innerHTML = `
-    <div class="sec"><h3>Rutas</h3><span class="num">${RUTAS.length} rutas · ${total} clientes</span></div>
-    ${RUTAS.length ? `<div class="rows">${RUTAS.map(r => `
-      <div class="row ruta">
-        <div class="row-main" style="cursor:default">
-          <span class="code num">${esc(r.codigo)}</span>
-          <span class="txt"><div class="name">${esc(r.nombre || 'Sin nombre')}</div>
-            <div class="addr num">${r.clientes} ${r.clientes === 1 ? 'cliente' : 'clientes'}${r.clientes ? ` · ${r.con_dia === r.clientes ? 'todos con día' : r.con_dia + ' con día'}` : ''}${r.sin_ubicar ? ` · <b class="warn">${r.sin_ubicar} sin ubicar</b>` : ''} · ${hace(r.actualizado)}</div></span>
-        </div>
-        <div class="ruta-acc">
-          <button class="btn small primary" data-act="importar" data-id="${esc(r.codigo)}">${ico('upload')}Cargar Excel</button>
-          <button class="btn small" data-act="editar" data-id="${esc(r.codigo)}">${ico('edit')}Editar</button>
-        </div>
-      </div>`).join('')}</div>` : `<div class="empty" style="margin-top:4vh"><h2>Todavía no hay rutas</h2><p>Crea la primera con su código y buzón.</p></div>`}
-    <div class="help">
-      <h3>Cómo tiene que ser el Excel</h3>
-      <p>Una fila de títulos y un cliente por fila. Columnas que entiende (el orden da igual):
-      <b>código</b>, <b>nombre</b>, <b>dirección</b>, <b>población</b>, <b>teléfono</b> y <b>día de visita</b> (lunes, martes… o 1 a 7).
-      Si trae <b>latitud</b> y <b>longitud</b>, mejor: no hace falta buscar las direcciones.</p>
-      <p>Al volver a cargar una ruta se actualizan los datos, se respetan las notas y los pines corregidos, y los clientes que ya no vienen quedan dados de baja.</p>
+const ir = h => { if (location.hash !== h) location.hash = h; else pintar(); };
+window.addEventListener('hashchange', () => { cerrarHoja(true); pintar(); });
+function pintarNav(){
+  const v = ruta().vista;
+  const items = [['resumen', 'chart', 'Resumen'], ['rutas', 'route', 'Rutas', R ? R.rutas.length : ''],
+                 ...(esAdmin() ? [['usuarios', 'users', 'Usuarios', USUARIOS ? USUARIOS.length : '']] : []), ['cuenta', 'user', 'Mi cuenta']];
+  $('#nav').innerHTML = items.map(([id, i, t, n]) => `<button data-go="#/${id}" ${(v === id || (v === 'ruta' && id === 'rutas')) ? 'aria-current="page"' : ''}>${ico(i)}${t}${n !== undefined && n !== '' ? `<span class="cnt num">${n}</span>` : ''}</button>`).join('');
+  $('#meCard').innerHTML = `<span class="avatar">${esc((YO.nombre || YO.usuario).slice(0, 2))}</span>
+    <div class="who"><b>${esc(YO.nombre || YO.usuario)}</b><span>${YO.rol === 'admin' ? 'Administrador' : 'Coordinador'}</span></div>
+    <button class="btn icon" data-act="salir" aria-label="Cerrar sesión" title="Cerrar sesión">${ico('logout')}</button>`;
+}
+async function pintar(){
+  if (!TOKEN) return;
+  const r = ruta();
+  if (r.vista === 'usuarios' && !esAdmin()) return ir('#/resumen');
+  pintarNav();
+  const page = $('#page');
+  try {
+    if (r.vista === 'resumen'){ if (!R) page.innerHTML = esqueleto('Resumen'); R = await rpc('oficina_resumen', {p_token: TOKEN}); pintarNav(); page.innerHTML = vResumen(); }
+    else if (r.vista === 'rutas'){ if (!R) page.innerHTML = esqueleto('Rutas'); R = await rpc('oficina_resumen', {p_token: TOKEN}); pintarNav(); page.innerHTML = vRutas(); }
+    else if (r.vista === 'ruta'){
+      if (ui.rutaCod !== r.codigo){ ui.q = ''; ui.dia = ui.filtroSig || 'todos'; ui.bajas = false; ui.rutaCod = r.codigo; }
+      ui.filtroSig = null;
+      if (!RUTA || RUTA.ruta.codigo !== r.codigo) page.innerHTML = esqueleto('Ruta ' + esc(r.codigo));
+      RUTA = await rpc('oficina_ruta', {p_token: TOKEN, p_codigo: r.codigo}); page.innerHTML = vRuta(r.tab);
+      if (r.tab === 'mapa') pintarMapaRuta();
+    }
+    else if (r.vista === 'usuarios'){ if (!USUARIOS) page.innerHTML = esqueleto('Usuarios'); USUARIOS = await rpc('oficina_usuarios', {p_token: TOKEN}); pintarNav(); page.innerHTML = vUsuarios(); }
+    else if (r.vista === 'cuenta') page.innerHTML = vCuenta();
+    else return ir('#/resumen');
+  } catch (e){ tratarError(e); if (e.message === 'RUTA_NO_EXISTE') ir('#/rutas'); }
+}
+const esqueleto = t => `<div class="ph"><div class="t"><h1>${t}</h1></div></div>
+  <div class="card"><div class="card-b" style="display:grid;gap:14px">${'<div class="skel"></div>'.repeat(6)}</div></div>`;
+
+// ---------- RESUMEN ----------
+function estadoHoy(r){
+  if (r.bloqueada) return '<span class="badge bad">Bloqueada</span>';
+  if (!r.clientes) return '<span class="badge plain">Sin clientes</span>';
+  if (r.hoy && r.hechos >= r.hoy) return '<span class="badge ok">Terminada</span>';
+  if (r.hechos || r.luego) return '<span class="badge info">En ruta</span>';
+  return '<span class="badge plain">Sin empezar</span>';
+}
+function vResumen(){
+  const rs = R.rutas, fecha = new Intl.DateTimeFormat('es-ES', {weekday:'long', day:'numeric', month:'long'}).format(new Date(R.fecha + 'T12:00:00'));
+  const prev = rs.reduce((a, r) => a + r.hoy, 0), hechos = rs.reduce((a, r) => a + r.hechos, 0);
+  const sinUb = rs.reduce((a, r) => a + r.sin_ubicar, 0), disp = rs.reduce((a, r) => a + r.dispositivos, 0);
+  const activas = rs.filter(r => r.hechos || r.luego).length;
+  const avisos = [];
+  rs.filter(r => r.bloqueada).forEach(r => avisos.push(['lock', `<b>${esc(r.codigo)}</b> está bloqueada por intentos fallidos de buzón.`, r.codigo, esAdmin() ? `<button class="btn sm out" data-act="desbloquear" data-id="${esc(r.codigo)}">Desbloquear</button>` : '']));
+  rs.filter(r => r.sin_ubicar).forEach(r => avisos.push(['pin', `<b>${esc(r.codigo)}</b> tiene ${pl(r.sin_ubicar, 'cliente sin ubicar', 'clientes sin ubicar')} en el mapa.`, r.codigo, `<button class="btn sm out" data-go="#/ruta/${esc(r.codigo)}/clientes" data-filtro="sinubicar">Revisar</button>`]));
+  rs.filter(r => !r.clientes).forEach(r => avisos.push(['upload', `<b>${esc(r.codigo)}</b> no tiene clientes cargados.`, r.codigo, `<button class="btn sm out" data-act="importar" data-id="${esc(r.codigo)}">Cargar Excel</button>`]));
+  return `<div class="ph"><div class="t"><h1>Resumen</h1><p>${fecha.charAt(0).toUpperCase() + fecha.slice(1)} · se actualiza cada minuto</p></div>
+      <div class="acts"><button class="btn sm out" data-act="refrescar">${ico('refresh')}Actualizar</button></div></div>
+    <div class="stats">
+      <div class="stat"><span>Visitas de hoy</span><b class="num">${hechos} <small>de ${prev}</small></b></div>
+      <div class="stat"><span>Rutas en marcha</span><b class="num">${activas} <small>de ${rs.length}</small></b></div>
+      <div class="stat"><span>Dispositivos conectados</span><b class="num">${disp}</b></div>
+      <div class="stat ${sinUb ? 'alert' : ''}"><span>Clientes sin ubicar</span><b class="num">${sinUb}</b></div>
+    </div>
+    <div class="card"><div class="card-h"><h2>Progreso de hoy</h2><span class="muted">Clientes del ${NOMBRE_DIA[R.dia]} de cada ruta</span></div>
+      ${rs.length ? `<div class="tw"><table class="t"><thead><tr><th>Ruta</th><th class="hide-m">Zona</th><th>Progreso</th><th class="r hide-m">Para luego</th><th class="hide-m">Última visita</th><th>Estado</th></tr></thead><tbody>
+      ${rs.map(r => `<tr class="click" data-go="#/ruta/${esc(r.codigo)}/clientes">
+        <td><span class="codeb">${esc(r.codigo)}</span></td><td class="hide-m">${esc(r.nombre || '—')}</td>
+        <td><div class="prog ${r.hoy && r.hechos >= r.hoy ? 'ok' : ''}"><div class="bar"><i style="transform:scaleX(${r.hoy ? Math.min(1, r.hechos/r.hoy) : 0})"></i></div><span>${r.hechos} / ${r.hoy}</span></div></td>
+        <td class="r num hide-m">${r.luego || '—'}</td><td class="hide-m num">${hora(r.ultima)}</td><td>${estadoHoy(r)}</td></tr>`).join('')}
+      </tbody></table></div>` : `<div class="emptyb"><b>Todavía no hay rutas</b>${esAdmin() ? 'Crea la primera desde Rutas.' : 'Pide a un administrador que las cree.'}</div>`}
+    </div>
+    <div class="card"><div class="card-h"><h2>Necesita atención</h2></div>
+      ${avisos.length ? `<ul class="attn">${avisos.map(([i, t, c, b]) => `<li>${ico(i)}<div>${t}</div>${b}</li>`).join('')}</ul>`
+        : `<div class="attn-ok">${ico('check')}Todo en orden: rutas desbloqueadas, con clientes y ubicados.</div>`}
     </div>`;
 }
 
-// ---------- Hoja (panel que sube desde abajo) ----------
+// ---------- RUTAS ----------
+function vRutas(){
+  const q = norm(ui.q), rs = R.rutas.filter(r => !q || norm(r.codigo + ' ' + r.nombre).includes(q));
+  return `<div class="ph"><div class="t"><h1>Rutas</h1><p>${pl(R.rutas.length, 'ruta', 'rutas')} · ${pl(R.rutas.reduce((a, r) => a + r.clientes, 0), 'cliente', 'clientes')} en total</p></div>
+      <div class="acts">${esAdmin() ? `<button class="btn sm primary" data-act="nuevaruta">${ico('plus-sq')}Nueva ruta</button>` : ''}</div></div>
+    <div class="card">
+      <div class="tools"><label class="search">${ico('search')}<input class="input" id="qRutas" placeholder="Buscar por código o zona" value="${esc(ui.q)}" autocomplete="off"></label></div>
+      ${rs.length ? `<div class="tw"><table class="t"><thead><tr><th>Ruta</th><th>Zona</th><th class="r">Clientes</th><th class="hide-m">Por día</th><th class="r hide-m">Sin ubicar</th><th class="hide-m">Última carga</th><th></th></tr></thead><tbody>
+      ${rs.map(r => `<tr class="click" data-go="#/ruta/${esc(r.codigo)}/clientes">
+        <td><span class="codeb">${esc(r.codigo)}</span></td><td>${esc(r.nombre || '—')}${r.bloqueada ? ' <span class="badge bad">Bloqueada</span>' : ''}</td>
+        <td class="r num">${r.clientes}</td>
+        <td class="hide-m"><span class="days">${[1,2,3,4,5].map(d => `<i class="${r.por_dia[d-1] ? '' : 'z'}">${CORTO[d]}<b>${r.por_dia[d-1]}</b></i>`).join('')}</span></td>
+        <td class="r num hide-m">${r.sin_ubicar ? `<span class="badge warn">${r.sin_ubicar}</span>` : '0'}</td>
+        <td class="hide-m">${hace(r.ultima_carga)}</td>
+        <td class="r"><button class="btn sm out" data-act="importar" data-id="${esc(r.codigo)}">${ico('upload')}<span class="hide-m">Cargar Excel</span></button></td></tr>`).join('')}
+      </tbody></table></div>` : `<div class="emptyb"><b>${R.rutas.length ? 'Ninguna ruta coincide' : 'Todavía no hay rutas'}</b>${R.rutas.length ? 'Prueba con otro código o zona.' : esAdmin() ? 'Crea la primera con «Nueva ruta».' : ''}</div>`}
+    </div>
+    <div class="card"><div class="card-h"><h2>Cómo tiene que ser el Excel</h2></div><div class="card-b" style="color:var(--ink-2);font-size:14px;line-height:1.55">
+      Una fila de títulos y un cliente por fila. Columnas que entiende, en cualquier orden: <b>código</b>, <b>nombre</b>, <b>dirección</b>, <b>población</b>, <b>teléfono</b> y <b>día de visita</b> (lunes, martes… o 1 a 7).
+      Si trae <b>latitud</b> y <b>longitud</b>, mejor. Al volver a cargar una ruta se actualizan los datos, se respetan las notas y los pines corregidos, y los clientes que ya no vienen quedan dados de baja.</div></div>`;
+}
+
+// ---------- DETALLE DE RUTA ----------
+function vRuta(tab){
+  const ru = RUTA.ruta, cs = RUTA.clientes, act = cs.filter(c => c.activo);
+  const hoyD = R ? R.dia : ((new Date().getDay() + 6) % 7) + 1;
+  const hoy = act.filter(c => !c.dia_visita || c.dia_visita === hoyD), hechos = hoy.filter(c => c.hoy === 'done').length;
+  const sinUb = act.filter(c => !Number.isFinite(c.lat)).length;
+  const tabs = [['clientes', 'Clientes', act.length], ['mapa', 'Mapa', ''], ['notas', 'Notas', RUTA.notas.length], ['cargas', 'Cargas de Excel', RUTA.cargas.length]];
+  let cuerpo = '';
+  if (tab === 'clientes') cuerpo = tClientes();
+  else if (tab === 'mapa') cuerpo = `<div class="amap" id="mapaRuta"><div class="legend">${[1,2,3,4,5].filter(d => act.some(c => c.dia_visita === d)).map(d => `<span><i class="dot" style="background:${COLOR_DIA[d]}"></i>${NOMBRE_DIA[d]}</span>`).join('')}${act.some(c => !c.dia_visita) ? `<span><i class="dot" style="background:${COLOR_DIA[0]}"></i>sin día</span>` : ''}</div></div>`;
+  else if (tab === 'notas') cuerpo = RUTA.notas.length ? `<div class="notes-l">${RUTA.notas.map(n => `<div class="nt"><div><b>${esc(n.cliente)}</b> · ${esc(n.texto)}<small>${esc(n.autor || 'Anónimo')} · ${hace(n.creada)}</small></div>
+      <button class="btn sm out" data-act="borrarnota" data-id="${n.id}">Borrar</button></div>`).join('')}</div>` : `<div class="emptyb"><b>Sin notas</b>Las notas que escriban los comerciales en sus clientes aparecerán aquí.</div>`;
+  else if (tab === 'cargas') cuerpo = RUTA.cargas.length ? `<div class="tw"><table class="t"><thead><tr><th>Fecha</th><th>Archivo</th><th>Quién</th><th class="r">Clientes</th><th class="r">Bajas</th></tr></thead><tbody>
+      ${RUTA.cargas.map(c => `<tr><td class="num">${new Intl.DateTimeFormat('es-ES', {dateStyle:'medium', timeStyle:'short'}).format(new Date(c.fecha))}</td><td>${esc(c.archivo || '—')}</td><td>${esc(c.usuario)}</td><td class="r num">${c.importados}</td><td class="r num">${c.bajas}</td></tr>`).join('')}
+      </tbody></table></div>` : `<div class="emptyb"><b>Sin cargas registradas</b>Cada vez que se cargue un Excel quedará apuntado aquí: cuándo, quién y con qué archivo.</div>`;
+  return `<button class="crumb" data-go="#/rutas">${ico('chevron')}Rutas</button>
+    <div class="ph"><div class="t" style="display:flex;gap:14px;align-items:center">
+        <span class="codeb big">${esc(ru.codigo)}</span>
+        <div><h1>${esc(ru.nombre || 'Sin nombre')}</h1><p>${pl(act.length, 'cliente', 'clientes')} · hoy ${hechos} de ${hoy.length} visitados${sinUb ? ` · <span style="color:var(--warn);font-weight:650">${sinUb} sin ubicar</span>` : ''} · ${pl(ru.dispositivos, 'dispositivo conectado', 'dispositivos conectados')}</p></div></div>
+      <div class="acts">
+        <button class="btn sm primary" data-act="importar" data-id="${esc(ru.codigo)}">${ico('upload')}Cargar Excel</button>
+        ${esAdmin() ? `<button class="btn sm out" data-act="editarruta" data-id="${esc(ru.codigo)}">${ico('key')}Acceso y datos</button>` : ''}
+      </div></div>
+    ${ru.bloqueada ? `<div class="notice">${ico('lock')}<div><b>Ruta bloqueada</b> por 5 intentos fallidos de buzón. Se desbloquea sola en 15 minutos.${esAdmin() ? ` <button class="inline" data-act="desbloquear" data-id="${esc(ru.codigo)}">Desbloquear ahora</button>` : ''}</div></div>` : ''}
+    <div class="card"><div class="tabsb" role="tablist">${tabs.map(([id, t, n]) => `<button role="tab" aria-selected="${tab === id}" data-go="#/ruta/${esc(ru.codigo)}/${id}">${t}${n !== '' ? `<span class="num">${n}</span>` : ''}</button>`).join('')}</div>
+      ${cuerpo}</div>`;
+}
+function filtrarClientes(){
+  const q = norm(ui.q);
+  return RUTA.clientes.filter(c => (ui.bajas || c.activo)
+    && (ui.dia === 'todos' || (ui.dia === 'sindia' && !c.dia_visita) || (ui.dia === 'sinubicar' && !Number.isFinite(c.lat)) || +ui.dia === c.dia_visita)
+    && (!q || norm(`${c.codigo} ${c.nombre} ${c.direccion}`).includes(q)));
+}
+function ubicacion(c){
+  if (!Number.isFinite(c.lat)) return '<span class="badge warn">Sin ubicar</span>';
+  if (c.geo === 'manual') return '<span class="badge info">Corregida</span>';
+  if (c.geo === 'aprox') return '<span class="badge warn">Aproximada</span>';
+  return '<span class="badge ok">Correcta</span>';
+}
+function tClientes(){
+  const act = RUTA.clientes.filter(c => c.activo), lista = filtrarClientes();
+  const cuenta = d => act.filter(c => c.dia_visita === d).length;
+  const opciones = [['todos', 'Todos', act.length], ...[1,2,3,4,5,6,7].filter(d => cuenta(d)).map(d => [String(d), NOMBRE_DIA[d].slice(0, 3), cuenta(d)]),
+    ...(act.some(c => !c.dia_visita) ? [['sindia', 'Sin día', act.filter(c => !c.dia_visita).length]] : []),
+    ...(act.some(c => !Number.isFinite(c.lat)) ? [['sinubicar', 'Sin ubicar', act.filter(c => !Number.isFinite(c.lat)).length]] : [])];
+  return `<div class="tools">
+      <label class="search">${ico('search')}<input class="input" id="qClientes" placeholder="Buscar cliente, código o dirección" value="${esc(ui.q)}" autocomplete="off"></label>
+      <div class="seg" role="group" aria-label="Filtrar por día">${opciones.map(([v, t, n]) => `<button data-act="filtro" data-id="${v}" aria-pressed="${ui.dia === v}">${t}<span class="num">${n}</span></button>`).join('')}</div>
+      ${RUTA.clientes.some(c => !c.activo) ? `<label class="chk"><input type="checkbox" id="chkBajas" ${ui.bajas ? 'checked' : ''}>Ver dados de baja</label>` : ''}
+    </div>
+    ${lista.length ? `<div class="tw"><table class="t"><thead><tr><th class="hide-m">Código</th><th>Cliente</th><th>Día</th><th class="hide-m">Ubicación</th><th>Hoy</th><th class="r hide-m">Notas</th></tr></thead><tbody>
+    ${lista.map(c => `<tr class="click ${c.activo ? '' : 'off'}" data-act="cliente" data-id="${c.id}">
+      <td class="hide-m num">${esc(c.codigo)}</td>
+      <td><b>${esc(c.nombre)}</b>${c.activo ? '' : ' <span class="badge plain">De baja</span>'}<span class="sub">${esc(c.direccion)}${c.poblacion ? ', ' + esc(c.poblacion) : ''}</span></td>
+      <td>${c.dia_visita ? `<i class="dot" style="background:${COLOR_DIA[c.dia_visita]}"></i>${NOMBRE_DIA[c.dia_visita]}` : '<span style="color:var(--ink-3)">—</span>'}</td>
+      <td class="hide-m">${ubicacion(c)}</td>
+      <td>${c.hoy === 'done' ? '<span class="badge ok">Hecho</span>' : c.hoy === 'skipped' ? '<span class="badge warn">Para luego</span>' : '<span style="color:var(--ink-3)">—</span>'}</td>
+      <td class="r num hide-m">${c.notas || ''}</td></tr>`).join('')}
+    </tbody></table></div>` : `<div class="emptyb"><b>${act.length ? 'Ningún cliente coincide' : 'Esta ruta no tiene clientes'}</b>${act.length ? 'Cambia el filtro o la búsqueda.' : 'Cárgalos con «Cargar Excel».'}</div>`}`;
+}
+// Mapa de la ruta: un punto por cliente, del color de su día
+function pintarMapaRuta(){
+  const el = $('#mapaRuta'); if (!el || !window.L) return;
+  if (ui.mapa){ ui.mapa.remove(); ui.mapa = null; }
+  const m = ui.mapa = L.map(el).setView([43.2965, -2.989], 14);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(m);
+  const pts = [];
+  RUTA.clientes.filter(c => c.activo && Number.isFinite(c.lat)).forEach(c => {
+    pts.push([c.lat, c.lng]);
+    L.marker([c.lat, c.lng], {title:c.nombre, icon:L.divIcon({className:'', html:`<div class="pinmk" style="background:${COLOR_DIA[c.dia_visita || 0]}"></div>`, iconSize:[14,14], iconAnchor:[7,7]})})
+      .addTo(m).bindTooltip(`<b>${esc(c.nombre)}</b><br>${esc(c.direccion)}${c.dia_visita ? ' · ' + NOMBRE_DIA[c.dia_visita] : ''}`).on('click', () => abrirHoja('cliente', c.id));
+  });
+  if (pts.length) m.fitBounds(pts, {padding:[40, 40], maxZoom:17});
+}
+
+// ---------- USUARIOS ----------
+function vUsuarios(){
+  return `<div class="ph"><div class="t"><h1>Usuarios de oficina</h1><p>Quién puede entrar en este panel y qué puede hacer.</p></div>
+      <div class="acts"><button class="btn sm primary" data-act="nuevousuario">${ico('plus-sq')}Nuevo usuario</button></div></div>
+    <div class="card"><div class="tw"><table class="t"><thead><tr><th>Usuario</th><th>Rol</th><th>Estado</th><th class="hide-m">Último acceso</th></tr></thead><tbody>
+      ${USUARIOS.map(u => `<tr class="click" data-act="editarusuario" data-id="${esc(u.usuario)}">
+        <td><div style="display:flex;align-items:center;gap:10px"><span class="avatar">${esc((u.nombre || u.usuario).slice(0, 2))}</span><div><b>${esc(u.nombre || u.usuario)}</b>${u.usuario === YO.usuario ? ' <span class="badge plain">Tú</span>' : ''}<span class="sub">${esc(u.usuario)}</span></div></div></td>
+        <td>${u.rol === 'admin' ? '<span class="badge info plain">Administrador</span>' : '<span class="badge plain">Coordinador</span>'}</td>
+        <td>${!u.activo ? '<span class="badge plain">Desactivado</span>' : u.bloqueado ? '<span class="badge bad">Bloqueado</span>' : '<span class="badge ok">Activo</span>'}</td>
+        <td class="hide-m">${hace(u.ultimo_acceso)}</td></tr>`).join('')}
+    </tbody></table></div></div>
+    <div class="card"><div class="card-h"><h2>Qué puede hacer cada rol</h2></div><div class="card-b" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;font-size:14px;color:var(--ink-2);line-height:1.55">
+      <div><b style="color:var(--ink)">Administrador</b><br>Todo lo del coordinador, y además: crear y borrar rutas, cambiar buzones, desbloquear rutas, cerrar sesiones de dispositivos y gestionar usuarios.</div>
+      <div><b style="color:var(--ink)">Coordinador</b><br>Ver el resumen y el progreso del día, cargar el Excel de las rutas, editar clientes, corregir pines y gestionar notas.</div>
+    </div></div>`;
+}
+
+// ---------- MI CUENTA ----------
+function vCuenta(){
+  return `<div class="ph"><div class="t"><h1>Mi cuenta</h1><p>${esc(YO.nombre || YO.usuario)} · ${YO.rol === 'admin' ? 'Administrador' : 'Coordinador'} · usuario «${esc(YO.usuario)}»</p></div></div>
+    <div class="card" style="max-width:520px"><div class="card-h"><h2>Cambiar contraseña</h2></div><div class="card-b">
+      <form id="fClaveForm">
+        <label class="field"><span>Contraseña actual</span><input class="input" type="password" name="actual" autocomplete="current-password" required></label>
+        <label class="field"><span>Contraseña nueva</span><input class="input" type="password" name="nueva" autocomplete="new-password" minlength="4" required></label>
+        <button class="btn primary sm" type="submit" style="min-height:44px">Guardar contraseña</button>
+      </form></div></div>`;
+}
+
+// ---------- PANEL LATERAL ----------
 function abrirHoja(tipo, id){
   ui.hoja = {tipo, id}; pintarHoja();
   $('#scrim').hidden = false; $('#sheet').hidden = false;
   requestAnimationFrame(() => { $('#scrim').classList.add('show'); $('#sheet').classList.add('show'); });
 }
-function cerrarHoja(){
-  if (ui.imp && ui.imp.trabajando) return;            // no cerrar a mitad de una carga
+function cerrarHoja(forzar){
+  if (!forzar && ui.imp && ui.imp.trabajando) return;
   ui.hoja = null; ui.imp = null;
+  if (ui.minimapa){ ui.minimapa.remove(); ui.minimapa = null; }
   $('#scrim').classList.remove('show'); $('#sheet').classList.remove('show');
   setTimeout(() => { if (!ui.hoja){ $('#scrim').hidden = true; $('#sheet').hidden = true; } }, 380);
 }
-function cabeza(titulo, sub){
-  return `<div class="sh-head"><div style="flex:1;min-width:0"><h2 id="sheetTitle">${titulo}</h2>${sub ? `<div class="addr">${sub}</div>` : ''}</div>
-    <button class="btn icon" data-act="close" aria-label="Cerrar">${ico('x')}</button></div>`;
-}
+const cabeza = (t, sub) => `<div class="sh-head"><div style="flex:1;min-width:0"><h2 id="sheetTitle">${t}</h2>${sub ? `<div class="addr">${sub}</div>` : ''}</div>
+  <button class="btn icon" data-act="close" aria-label="Cerrar">${ico('x')}</button></div>`;
 function pintarHoja(){
-  const h = ui.hoja, b = $('#sheetBody');
+  const h = ui.hoja, b = $('#sheetBody'); if (!h) return;
   if (h.tipo === 'ruta'){
-    const r = RUTAS.find(x => x.codigo === h.id);
-    b.innerHTML = cabeza(r ? `Editar ruta ${esc(r.codigo)}` : 'Nueva ruta', r ? 'Deja el buzón vacío si no quieres cambiarlo.' : 'El comercial entrará con este código y este buzón.') + `
-      <form id="fRutaForm" style="margin-top:18px">
-        <div class="pair">
-          <label class="field"><span>Código</span><input class="input" name="codigo" value="${esc(r ? r.codigo : '')}" ${r ? 'readonly' : ''} placeholder="1QA" autocapitalize="characters" required style="text-transform:uppercase"></label>
-          <label class="field"><span>Buzón</span><input class="input" name="buzon" inputmode="numeric" autocomplete="off" placeholder="${r ? 'Sin cambios' : '1234'}"></label>
-        </div>
-        <label class="field"><span>Nombre <small>· zona o descripción</small></span><input class="input" name="nombre" value="${esc(r ? r.nombre : '')}" placeholder="Bilbao centro"></label>
-        <button class="btn primary" type="submit" style="width:100%;margin-top:6px">${r ? 'Guardar cambios' : 'Crear ruta'}</button>
-      </form>`;
+    const r = h.id && R ? R.rutas.find(x => x.codigo === h.id) : null;
+    b.innerHTML = cabeza(r ? `Ruta ${esc(r.codigo)}` : 'Nueva ruta', r ? 'Acceso y datos de la ruta.' : 'El comercial entrará con este código y este buzón.') + `
+      <form id="fRutaForm"><div class="form-grid">
+        <label class="field"><span>Código</span><input class="input" name="codigo" value="${esc(r ? r.codigo : '')}" ${r ? 'readonly' : ''} placeholder="1QA" required style="text-transform:uppercase"></label>
+        <label class="field"><span>${r ? 'Buzón nuevo' : 'Buzón'}</span><input class="input" name="buzon" inputmode="numeric" autocomplete="off" placeholder="${r ? 'Sin cambios' : '1234'}"></label>
+        <label class="field full"><span>Zona o descripción</span><input class="input" name="nombre" value="${esc(r ? r.nombre : '')}" placeholder="Bilbao centro"></label>
+      </div>
+      ${r ? '<p class="hint">Si cambias el buzón, los dispositivos que estén dentro tendrán que volver a entrar con el nuevo.</p>' : ''}
+      <button class="btn primary" type="submit" style="width:100%">${r ? 'Guardar cambios' : 'Crear ruta'}</button></form>
+      ${r ? `<div class="danger-zone">
+        <div class="sh-sec" style="margin-top:0">Accesos</div>
+        <div style="display:grid;gap:8px">
+          <button class="btn out" data-act="cerrarsesiones" data-id="${esc(r.codigo)}">${ico('logout')}Cerrar sesión en todos los dispositivos (${r.dispositivos})</button>
+          ${r.bloqueada ? `<button class="btn out" data-act="desbloquear" data-id="${esc(r.codigo)}">${ico('lock')}Desbloquear la ruta</button>` : ''}
+          <button class="btn out danger" data-act="borrarruta" data-id="${esc(r.codigo)}">${ico('trash')}Borrar la ruta y todos sus clientes</button>
+        </div></div>` : ''}`;
+    return;
+  }
+  if (h.tipo === 'cliente'){
+    const c = RUTA.clientes.find(x => x.id === h.id); if (!c) return cerrarHoja(true);
+    b.innerHTML = cabeza(esc(c.nombre), `Ruta ${esc(RUTA.ruta.codigo)} · código ${esc(c.codigo)}`) + `
+      <form id="fClienteForm" data-id="${c.id}"><div class="form-grid">
+        <label class="field full"><span>Nombre</span><input class="input" name="nombre" value="${esc(c.nombre)}" required></label>
+        <label class="field full"><span>Dirección</span><input class="input" name="direccion" value="${esc(c.direccion)}"></label>
+        <label class="field"><span>Población</span><input class="input" name="poblacion" value="${esc(c.poblacion)}"></label>
+        <label class="field"><span>Teléfono</span><input class="input" name="telefono" value="${esc(c.telefono)}" inputmode="tel"></label>
+        <label class="field"><span>Día de visita</span><select class="input" name="dia_visita"><option value="">Sin día</option>${[1,2,3,4,5,6,7].map(d => `<option value="${d}" ${c.dia_visita === d ? 'selected' : ''}>${NOMBRE_DIA[d]}</option>`).join('')}</select></label>
+        <label class="field"><span>Estado</span><select class="input" name="activo"><option value="true" ${c.activo ? 'selected' : ''}>Activo</option><option value="false" ${c.activo ? '' : 'selected'}>De baja</option></select></label>
+      </div>
+      <div class="field"><span style="display:block;font-size:13.5px;font-weight:650;color:var(--ink-2)">Ubicación ${ubicacion(c)}</span>
+        <div class="minimap" id="miniMapa">${window.L ? '' : '<div class="emptyb" style="padding:80px 12px">El mapa no está disponible sin conexión.</div>'}</div>
+        <div class="pinrow"><span id="pinTxt">${Number.isFinite(c.lat) ? 'Arrastra el pin o toca el mapa para corregirlo.' : 'Toca el mapa donde está el cliente.'}</span>
+          <button type="button" class="btn sm out" data-act="regeo">${ico('pin')}Ubicar por la dirección</button></div></div>
+      <button class="btn primary" type="submit" style="width:100%;margin-top:10px">Guardar cambios</button></form>`;
+    ui.pinTmp = Number.isFinite(c.lat) ? {lat:c.lat, lng:c.lng, geo:c.geo} : null;
+    setTimeout(miniMapa, 60);
     return;
   }
   if (h.tipo === 'importar'){
-    const r = RUTAS.find(x => x.codigo === h.id), im = ui.imp || {};
+    const r = R && R.rutas.find(x => x.codigo === h.id), im = ui.imp || {};
     let cuerpo;
     if (!im.filas) cuerpo = `
       <label class="field" style="margin-top:18px"><span>Población por defecto <small>· si el Excel no la trae</small></span>
         <input class="input" id="fPob" placeholder="Bilbao" value="${esc(im.pob || '')}"></label>
-      <label class="drop" for="fFile">${ico('upload', 'width:30px;height:30px')}<b>Elegir el Excel o CSV</b><span>.xlsx, .xls o .csv</span></label>
+      <label class="drop" for="fFile">${ico('upload', 'width:30px;height:30px')}<b>Elegir el Excel o CSV</b><span>.xlsx, .xls o .csv · también puedes arrastrarlo aquí</span></label>
       <input type="file" id="fFile" accept=".xlsx,.xls,.csv,.txt" class="sr">
       ${im.error ? `<div class="notice" style="margin-top:14px">${ico('alert')}<div>${esc(im.error)}</div></div>` : ''}`;
     else if (im.trabajando) cuerpo = `
       <div class="loading" style="margin-top:18px;box-shadow:none;background:var(--sunken)"><h2>${esc(im.paso)}</h2>
         <p class="num">${esc(im.detalle || '')}</p><div class="bar"><i style="transform:scaleX(${im.pct || 0})"></i></div></div>
-      <p class="addr" style="margin-top:12px">No cierres esta página. Las direcciones se buscan a 1 por segundo; las ya buscadas antes van al instante.</p>`;
+      <p class="hint" style="margin-top:12px">No cierres esta página. Las direcciones nuevas se buscan a una por segundo; las ya buscadas van al instante.</p>`;
     else if (im.resultado) cuerpo = `
-      <div class="notice info" style="margin-top:18px">${ico('check')}<div><b>Ruta ${esc(h.id)} actualizada.</b> ${im.resultado.importados} clientes cargados${im.resultado.dados_de_baja ? `, ${im.resultado.dados_de_baja} dados de baja` : ''}.</div></div>
-      <button class="btn primary" style="width:100%;margin-top:8px" data-act="close">Hecho</button>`;
+      <div class="notice info" style="margin-top:18px">${ico('check')}<div><b>Ruta ${esc(h.id)} actualizada.</b> ${pl(im.resultado.importados, 'cliente cargado', 'clientes cargados')}${im.resultado.dados_de_baja ? `, ${im.resultado.dados_de_baja} dados de baja` : ''}.</div></div>
+      <button class="btn primary" style="width:100%;margin-top:8px" data-go="#/ruta/${esc(h.id)}/clientes">Ver los clientes</button>`;
     else {
       const sinSitio = im.filas.filter(f => !Number.isFinite(f.lat)).length;
       const porDia = [1,2,3,4,5,6,7].map(d => [d, im.filas.filter(f => f.dia_visita === d).length]).filter(x => x[1]);
       cuerpo = `
-      <div class="resumen">
-        <div><b class="num">${im.filas.length}</b><span>clientes</span></div>
-        <div><b class="num">${im.filas.length - sinSitio}</b><span>ubicados</span></div>
-        <div><b class="num ${sinSitio ? 'warn' : ''}">${sinSitio}</b><span>sin ubicar</span></div>
-      </div>
-      ${porDia.length ? `<p class="addr">Por día: ${porDia.map(([d, n]) => `${NOMBRE_DIA[d]} ${n}`).join(' · ')}</p>` : `<p class="addr">El archivo no trae día de visita: el comercial verá todos los clientes juntos.</p>`}
-      ${sinSitio ? `<p class="addr">${sinSitio} direcciones no se han encontrado. Se cargan igualmente y el comercial podrá colocarlas en el mapa.</p>` : ''}
+      <div class="resumen"><div><b class="num">${im.filas.length}</b><span>clientes</span></div><div><b class="num">${im.filas.length - sinSitio}</b><span>ubicados</span></div>
+        <div><b class="num ${sinSitio ? 'warn' : ''}">${sinSitio}</b><span>sin ubicar</span></div></div>
+      ${porDia.length ? `<p class="hint" style="margin:0 0 8px">Por día: ${porDia.map(([d, n]) => `${NOMBRE_DIA[d]} ${n}`).join(' · ')}</p>` : `<div class="notice" style="margin:0 0 8px">${ico('calendar')}<div>El archivo no trae día de visita: el comercial verá todos los clientes juntos.</div></div>`}
+      ${sinSitio ? `<p class="hint" style="margin:0 0 8px">${pl(sinSitio, 'dirección no encontrada', 'direcciones no encontradas')}. Se cargan igualmente y podréis colocarlas en el mapa.</p>` : ''}
+      ${r && r.clientes ? `<p class="hint" style="margin:0 0 8px">Ahora la ruta tiene ${r.clientes} clientes. Los que no vengan en este archivo quedarán dados de baja.</p>` : ''}
       <ul class="preview">${im.filas.slice(0, 6).map(f => `<li><b>${esc(f.nombre)}</b><span>${esc(f.direccion)}${f.dia_visita ? ' · ' + NOMBRE_DIA[f.dia_visita] : ''}</span></li>`).join('')}
         ${im.filas.length > 6 ? `<li class="mas">y ${im.filas.length - 6} más…</li>` : ''}</ul>
       <button class="btn primary" style="width:100%;margin-top:16px" data-act="subir">${ico('upload')}Subir a la ruta ${esc(h.id)}</button>
-      <button class="btn" style="width:100%;margin-top:8px" data-act="otro">Elegir otro archivo</button>`;
+      <button class="btn out" style="width:100%;margin-top:8px" data-act="otro">Elegir otro archivo</button>`;
     }
-    b.innerHTML = cabeza(`Cargar clientes en ${esc(h.id)}`, r && r.clientes ? `Ahora tiene ${r.clientes} clientes. Se actualizarán con el archivo.` : 'La ruta está vacía.') + cuerpo;
+    b.innerHTML = cabeza(`Cargar clientes en ${esc(h.id)}`, esc(im.archivo || (r && r.nombre) || '')) + cuerpo;
     const f = $('#fFile'); if (f) f.addEventListener('change', e => leerYUbicar(e.target.files[0]));
+    const d = $('.drop');
+    if (d){ d.addEventListener('dragover', e => { e.preventDefault(); d.style.borderColor = 'var(--accent)'; });
+            d.addEventListener('drop', e => { e.preventDefault(); leerYUbicar(e.dataTransfer.files[0]); }); }
+    return;
+  }
+  if (h.tipo === 'usuario'){
+    const u = h.id && USUARIOS ? USUARIOS.find(x => x.usuario === h.id) : null, yo = u && u.usuario === YO.usuario;
+    b.innerHTML = cabeza(u ? esc(u.nombre || u.usuario) : 'Nuevo usuario', u ? `Usuario «${esc(u.usuario)}»` : 'Entrará en este panel con su usuario y su contraseña.') + `
+      <form id="fUsuarioForm" style="margin-top:18px">
+        <div class="rolecards" role="radiogroup" aria-label="Rol">
+          <label><input type="radio" name="rol" value="coordinador" ${!u || u.rol === 'coordinador' ? 'checked' : ''} ${yo ? 'disabled' : ''}><b>Coordinador</b>Día a día: Excel, clientes, pines y notas.</label>
+          <label><input type="radio" name="rol" value="admin" ${u && u.rol === 'admin' ? 'checked' : ''}><b>Administrador</b>Todo, incluidos usuarios y buzones.</label>
+        </div>
+        <div class="form-grid" style="margin-top:0">
+          <label class="field"><span>Usuario</span><input class="input" name="usuario" value="${esc(u ? u.usuario : '')}" ${u ? 'readonly' : ''} placeholder="miren" autocapitalize="none" autocomplete="off" required></label>
+          <label class="field"><span>Nombre</span><input class="input" name="nombre" value="${esc(u ? u.nombre : '')}" placeholder="Miren"></label>
+          <label class="field full"><span>${u ? 'Contraseña nueva' : 'Contraseña'}</span><input class="input" name="clave" type="text" autocomplete="off" placeholder="${u ? 'Déjala vacía para no cambiarla' : 'Mínimo 4 caracteres'}"></label>
+          ${u && !yo ? `<label class="field full"><span>Estado</span><select class="input" name="activo"><option value="true" ${u.activo ? 'selected' : ''}>Activo</option><option value="false" ${u.activo ? '' : 'selected'}>Desactivado (no puede entrar)</option></select></label>` : ''}
+        </div>
+        <button class="btn primary" type="submit" style="width:100%">${u ? 'Guardar cambios' : 'Crear usuario'}</button></form>
+      ${u && !yo ? `<div class="danger-zone"><button class="btn out danger" style="width:100%" data-act="borrarusuario" data-id="${esc(u.usuario)}">${ico('trash')}Borrar este usuario</button></div>` : ''}`;
   }
 }
+// Mapa pequeño de la ficha del cliente: el pin se arrastra o se toca el mapa; se guarda con "Guardar cambios"
+function miniMapa(){
+  const el = $('#miniMapa'); if (!el || !window.L) return;
+  if (ui.minimapa) ui.minimapa.remove();
+  const c = RUTA.clientes.find(x => x.id === ui.hoja.id);
+  const base = ui.pinTmp || (RUTA.clientes.find(x => Number.isFinite(x.lat)) || {lat:43.2965, lng:-2.989});
+  const m = ui.minimapa = L.map(el, {zoomControl:false}).setView([base.lat, base.lng], ui.pinTmp ? 17 : 14);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution:'&copy; OpenStreetMap'}).addTo(m);
+  let mk = null;
+  const poner = p => {
+    if (!mk){ mk = L.marker([p.lat, p.lng], {draggable:true}).addTo(m); mk.on('dragend', e => { const q = e.target.getLatLng(); ui.pinTmp = {lat:q.lat, lng:q.lng, geo:'manual'}; avisoPin(); }); }
+    else mk.setLatLng([p.lat, p.lng]);
+  };
+  if (ui.pinTmp) poner(ui.pinTmp);
+  m.on('click', e => { ui.pinTmp = {lat:e.latlng.lat, lng:e.latlng.lng, geo:'manual'}; poner(ui.pinTmp); avisoPin(); });
+  ui.ponerPin = p => { poner(p); m.setView([p.lat, p.lng], 17); };
+}
+const avisoPin = () => { const t = $('#pinTxt'); if (t) t.innerHTML = '<b style="color:var(--accent-ink)">Pin movido.</b> Pulsa «Guardar cambios» para aplicarlo.'; };
+
+// ---------- Importar ----------
 async function leerYUbicar(file){
   if (!file) return;
-  const im = ui.imp = {pob: ($('#fPob') || {}).value || ''};
+  const im = ui.imp = {pob: ($('#fPob') || {}).value || '', archivo: file.name};
   try {
     const filas = await leerArchivo(file);
     if (im.pob) filas.forEach(f => { if (!f.poblacion) f.poblacion = im.pob.trim(); });
@@ -674,53 +1065,115 @@ async function subir(){
   const im = ui.imp, codigo = ui.hoja.id;
   im.trabajando = true; im.paso = 'Subiendo a la ruta…'; im.detalle = ''; im.pct = 1; pintarHoja();
   try {
-    im.resultado = await rpc('oficina_importar', {p_token: TOKEN, p_codigo: codigo, p_clientes: im.filas.map(f => ({
+    im.resultado = await rpc('oficina_importar', {p_token: TOKEN, p_codigo: codigo, p_archivo: im.archivo || '', p_clientes: im.filas.map(f => ({
       codigo: f.codigo, nombre: f.nombre, direccion: f.direccion, poblacion: f.poblacion, telefono: f.telefono,
       dia_visita: f.dia_visita || '', lat: Number.isFinite(f.lat) ? f.lat : '', lng: Number.isFinite(f.lng) ? f.lng : '', geo: f.geo || ''}))});
-    im.trabajando = false; pintarHoja(); cargarRutas();
+    im.trabajando = false; pintarHoja(); R = null; RUTA = null; pintar();
   } catch (e){ im.trabajando = false; pintarHoja(); tratarError(e); }
 }
 
-// ---------- Eventos ----------
-document.addEventListener('click', e => {
+// ---------- Acciones ----------
+async function accion(fn, args, ok){
+  try { const r = await rpc(fn, {p_token: TOKEN, ...args}); if (ok) toast(typeof ok === 'function' ? ok(r) : ok); R = null; await pintar(); return true; }
+  catch (e){ tratarError(e); return false; }
+}
+document.addEventListener('click', async e => {
+  const go = e.target.closest('[data-go]');
+  if (go){ if (go.dataset.filtro){ ui.filtroSig = go.dataset.filtro; ui.rutaCod = null; } return ir(go.dataset.go); }
   const el = e.target.closest('[data-act]'); if (!el) return;
   const act = el.dataset.act, id = el.dataset.id;
   if (act === 'close') return cerrarHoja();
-  if (act === 'nueva') return abrirHoja('ruta', null);
-  if (act === 'editar') return abrirHoja('ruta', id);
-  if (act === 'importar'){ ui.imp = null; return abrirHoja('importar', id); }
+  if (act === 'salir') return salir();
+  if (act === 'refrescar'){ R = null; return pintar(); }
+  if (act === 'nuevaruta') return abrirHoja('ruta', null);
+  if (act === 'editarruta'){ if (!R) R = await rpc('oficina_resumen', {p_token: TOKEN}); return abrirHoja('ruta', id); }
+  if (act === 'importar'){ ui.imp = null; if (!R) R = await rpc('oficina_resumen', {p_token: TOKEN}).catch(() => R); return abrirHoja('importar', id); }
   if (act === 'subir') return subir();
   if (act === 'otro'){ ui.imp = {pob: ui.imp && ui.imp.pob}; return pintarHoja(); }
-  if (act === 'salir') return salir();
+  if (act === 'cliente') return abrirHoja('cliente', id);
+  if (act === 'filtro'){ ui.dia = id; $('#page').innerHTML = vRuta('clientes'); return; }
+  if (act === 'nuevousuario') return abrirHoja('usuario', null);
+  if (act === 'editarusuario') return abrirHoja('usuario', id);
+  if (act === 'desbloquear') return accion('oficina_desbloquear', {p_codigo: id}, `Ruta ${id} desbloqueada`).then(ok => ok && cerrarHoja(true));
+  if (act === 'cerrarsesiones'){
+    if (!confirm(`Todos los dispositivos que tengan abierta la ruta ${id} tendrán que volver a entrar con el buzón. ¿Seguir?`)) return;
+    return accion('oficina_cerrar_sesiones', {p_codigo: id}, n => `${pl(n, 'sesión cerrada', 'sesiones cerradas')} en ${id}`).then(ok => ok && cerrarHoja(true));
+  }
+  if (act === 'borrarruta'){
+    const t = prompt(`Se borrará la ruta ${id} con todos sus clientes, notas y visitas. No se puede deshacer.\n\nEscribe ${id} para confirmar:`);
+    if ((t || '').trim().toUpperCase() !== id) return;
+    cerrarHoja(true); return accion('oficina_borrar_ruta', {p_codigo: id}, `Ruta ${id} borrada`).then(() => ir('#/rutas'));
+  }
+  if (act === 'borrarnota'){ if (!confirm('¿Borrar esta nota para todos?')) return; return accion('oficina_borrar_nota', {p_nota: id}, 'Nota borrada'); }
+  if (act === 'borrarusuario'){
+    if (!confirm(`¿Borrar el usuario «${id}»? Dejará de poder entrar.`)) return;
+    cerrarHoja(true); USUARIOS = null; return accion('oficina_borrar_usuario', {p_usuario: id}, 'Usuario borrado');
+  }
+  if (act === 'regeo'){
+    const f = $('#fClienteForm'); const c = {direccion: f.direccion.value, poblacion: f.poblacion.value};
+    el.disabled = true; const r = await buscarDireccion(c); el.disabled = false;
+    if (!r) return toast('No encuentro esa dirección. Coloca el pin a mano.');
+    ui.pinTmp = r; if (ui.ponerPin) ui.ponerPin(r); avisoPin();
+  }
 });
+document.addEventListener('input', e => {
+  if (e.target.id === 'qRutas'){ ui.q = e.target.value; const pos = e.target.selectionStart; $('#page').innerHTML = vRutas(); const n = $('#qRutas'); n.focus(); n.setSelectionRange(pos, pos); }
+  if (e.target.id === 'qClientes'){ ui.q = e.target.value; const pos = e.target.selectionStart; $('#page').innerHTML = vRuta('clientes'); const n = $('#qClientes'); n.focus(); n.setSelectionRange(pos, pos); }
+});
+document.addEventListener('change', e => { if (e.target.id === 'chkBajas'){ ui.bajas = e.target.checked; $('#page').innerHTML = vRuta('clientes'); } });
 document.addEventListener('submit', async e => {
-  if (e.target.id === 'loginForm'){
-    e.preventDefault();
-    const clave = $('#fClave').value, b = $('#btnEntrar'), lbl = b.querySelector('span');
-    if (!clave){ $('#loginError').textContent = 'Escribe la clave.'; return; }
-    b.disabled = true; lbl.textContent = 'Entrando…'; $('#loginError').textContent = '';
-    try { await entrar(clave); $('#fClave').value = ''; $('#login').hidden = true; $('#app').hidden = false; cargarRutas(); }
-    catch (err){ $('#loginError').textContent = {CLAVE_INCORRECTA:'Clave incorrecta.', BLOQUEADA:'Demasiados intentos. Espera 15 minutos.',
-      SIN_CLAVE_OFICINA:'Todavía no hay clave de oficina. Créala en Supabase (ver instrucciones).', SIN_CONEXION:'No hay conexión.'}[err.message] || err.message; }
-    b.disabled = false; lbl.textContent = 'Entrar';
-  }
-  if (e.target.id === 'fRutaForm'){
-    e.preventDefault();
-    const f = e.target, codigo = f.codigo.value.trim().toUpperCase();
-    try {
-      await rpc('oficina_guardar_ruta', {p_token: TOKEN, p_codigo: codigo, p_nombre: f.nombre.value, p_buzon: f.buzon.value});
-      cerrarHoja(); await cargarRutas(); toast(`Ruta ${codigo} guardada`);
-    } catch (err){ tratarError(err); }
-  }
+  const f = e.target; e.preventDefault();
+  const boton = f.querySelector('[type=submit]'); if (boton) boton.disabled = true;
+  try {
+    if (f.id === 'loginForm'){
+      const lbl = boton.querySelector('span'); lbl.textContent = 'Entrando…'; $('#loginError').textContent = '';
+      try { await entrar(f.usuario.value, f.clave.value); f.clave.value = ''; $('#login').hidden = true; $('#app').hidden = false;
+            if (esAdmin()) rpc('oficina_usuarios', {p_token: TOKEN}).then(u => { USUARIOS = u; pintarNav(); }).catch(() => {});
+            pintar(); }
+      catch (err){ $('#loginError').textContent = {DATOS_INCORRECTOS:'Usuario o contraseña incorrectos.', BLOQUEADO:'Demasiados intentos. Espera 15 minutos.', SIN_CONEXION:'No hay conexión.'}[err.message] || err.message; }
+      lbl.textContent = 'Entrar';
+    }
+    if (f.id === 'fRutaForm'){
+      const codigo = f.codigo.value.trim().toUpperCase();
+      if (await accion('oficina_guardar_ruta', {p_codigo: codigo, p_nombre: f.nombre.value, p_buzon: f.buzon.value}, `Ruta ${codigo} guardada`)) cerrarHoja(true);
+    }
+    if (f.id === 'fClienteForm'){
+      const d = {nombre: f.nombre.value, direccion: f.direccion.value, poblacion: f.poblacion.value, telefono: f.telefono.value,
+                 dia_visita: f.dia_visita.value, activo: f.activo.value === 'true'};
+      const c = RUTA.clientes.find(x => x.id === f.dataset.id);
+      if (ui.pinTmp && (ui.pinTmp.lat !== c.lat || ui.pinTmp.lng !== c.lng)) Object.assign(d, {lat: String(ui.pinTmp.lat), lng: String(ui.pinTmp.lng), geo: ui.pinTmp.geo || 'manual'});
+      try { await rpc('oficina_guardar_cliente', {p_token: TOKEN, p_id: f.dataset.id, p_datos: d}); toast('Cliente guardado'); cerrarHoja(true); RUTA = null; pintar(); }
+      catch (err){ tratarError(err); }
+    }
+    if (f.id === 'fUsuarioForm'){
+      const u = f.usuario.value.trim().toLowerCase(), rol = (f.querySelector('[name=rol]:checked') || {}).value || 'admin';
+      const activo = f.activo ? f.activo.value === 'true' : true;
+      try { await rpc('oficina_guardar_usuario', {p_token: TOKEN, p_usuario: u, p_nombre: f.nombre.value, p_rol: rol, p_clave: f.clave.value, p_activo: activo});
+            toast('Usuario guardado'); cerrarHoja(true); USUARIOS = null; pintar(); }
+      catch (err){ tratarError(err); }
+    }
+    if (f.id === 'fClaveForm'){
+      try { await rpc('oficina_cambiar_mi_clave', {p_token: TOKEN, p_actual: f.actual.value, p_nueva: f.nueva.value}); f.reset(); toast('Contraseña cambiada'); }
+      catch (err){ tratarError(err); }
+    }
+  } finally { if (boton) boton.disabled = false; }
 });
-$('#scrim').addEventListener('click', cerrarHoja);
+$('#scrim').addEventListener('click', () => cerrarHoja());
 document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarHoja(); });
 $('#btnEye').addEventListener('click', e => {
   const f = $('#fClave'), ver = f.type === 'password'; f.type = ver ? 'text' : 'password';
   e.currentTarget.setAttribute('aria-pressed', ver); e.currentTarget.querySelector('use').setAttribute('href', ver ? '#i-eye-off' : '#i-eye');
 });
+// El resumen se refresca solo cada minuto mientras está a la vista
+setInterval(() => { if (TOKEN && !document.hidden && ruta().vista === 'resumen' && !ui.hoja) pintar(); }, 60000);
 
-if (TOKEN){ $('#login').hidden = true; $('#app').hidden = false; cargarRutas(); } else salir();
+// ---------- Arranque ----------
+if (TOKEN && YO){
+  $('#login').hidden = true; $('#app').hidden = false;
+  rpc('oficina_yo', {p_token: TOKEN}).then(y => { YO = y; store.set('gnv.oficina.yo', y); pintarNav();
+    if (esAdmin()) rpc('oficina_usuarios', {p_token: TOKEN}).then(u => { USUARIOS = u; pintarNav(); }).catch(() => {}); }).catch(tratarError);
+  pintar();
+} else salir();
 </script>
 </body>
 </html>

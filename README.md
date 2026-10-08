@@ -15,9 +15,13 @@ Nace de un problema real: el software de pedidos da la lista de clientes del dí
 - Funciona con poca cobertura: los cambios se guardan en cola y se envían al volver la señal.
 - Instalable (PWA) con icono propio, a pantalla completa y ahorrando datos móviles.
 
-**Oficina** (`oficina.html`)
-- Crear rutas y gestionar buzones.
-- Cargar el Excel/CSV de clientes de cada ruta, con ubicación automática de direcciones.
+**Panel de oficina** (`oficina.html`, pensado para ordenador)
+- Usuarios con roles: administrador y coordinador.
+- Resumen del día: progreso de cada ruta en directo y avisos (rutas bloqueadas, clientes sin ubicar, rutas vacías).
+- Rutas: clientes por día, mapa, notas e historial de cargas de Excel.
+- Carga de Excel/CSV con vista previa y ubicación automática de direcciones.
+- Edición de clientes y corrección de pines sobre el mapa.
+- Accesos: buzones, desbloqueo de rutas y cierre de sesiones en dispositivos.
 
 ## Tecnología
 - HTML, CSS y JavaScript sin frameworks.
