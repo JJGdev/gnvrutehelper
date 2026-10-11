@@ -796,6 +796,12 @@ html{background:#B4BDF9}
 .preview li span{color:var(--ink-3)}
 .preview .mas{color:var(--ink-3)}
 
+/* Firma y versión, discreta al pie de la pantalla de entrada */
+.firma{margin:auto 0 0;padding:26px 16px calc(4px + env(safe-area-inset-bottom,0px));font-size:12.5px;color:var(--ink-3);text-align:center;letter-spacing:.01em}
+.firma a{color:inherit;font-weight:600;text-decoration:none;border-radius:6px;padding:2px 3px;transition:color .2s ease,background-color .2s ease}
+@media (hover:hover){.firma a:hover{color:var(--accent-ink);background:rgba(255,255,255,.55)}}
+@media (min-width:880px){.firma{position:absolute;left:0;right:0;bottom:16px;margin:0;padding:0}}
+
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -818,6 +824,7 @@ html{background:#B4BDF9}
     <button class="btn primary" id="btnEntrar" type="submit"><span>Entrar</span><svg class="ico"><use href="#i-arrow"/></svg></button>
     <p class="login-foot"><a href="./">Ir a la app de rutas</a></p>
   </form>
+  <p class="firma">v1.0 · by <a href="https://github.com/JJGdev" target="_blank" rel="noopener">JJGdev</a></p>
 </div>
 
 <div class="adm" id="app" hidden>

@@ -553,6 +553,12 @@ body:has(.login:not([hidden])) .app .pane{visibility:hidden!important}
 .list-pane{padding-top:18px;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 16px,#000 calc(100% - 20px),transparent 100%);
   mask-image:linear-gradient(to bottom,transparent 0,#000 16px,#000 calc(100% - 20px),transparent 100%)}
 
+/* Firma y versión, discreta al pie de la pantalla de entrada */
+.firma{margin:auto 0 0;padding:26px 16px calc(4px + env(safe-area-inset-bottom,0px));font-size:12.5px;color:var(--ink-3);text-align:center;letter-spacing:.01em}
+.firma a{color:inherit;font-weight:600;text-decoration:none;border-radius:6px;padding:2px 3px;transition:color .2s ease,background-color .2s ease}
+@media (hover:hover){.firma a:hover{color:var(--accent-ink);background:rgba(255,255,255,.55)}}
+@media (min-width:880px){.firma{position:absolute;left:0;right:0;bottom:16px;margin:0;padding:0}}
+
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -616,6 +622,7 @@ body:has(.login:not([hidden])) .app .pane{visibility:hidden!important}
     <p class="login-foot">Usa la ruta y el buzón de Telynet. Los visitados y las notas se comparten con quien lleve la misma ruta.</p>
     <p class="login-foot" style="margin-top:6px"><a href="oficina.html">Acceso de oficina</a></p>
   </form>
+  <p class="firma">v1.0 · by <a href="https://github.com/JJGdev" target="_blank" rel="noopener">JJGdev</a></p>
 </div>
 
 <div class="scrim" id="scrim" hidden></div>
@@ -1141,8 +1148,12 @@ function render(swap){
   if (sinSitio.length)
     h += `<div class="notice">${ico('alert')}<div><b>${sinSitio.length} ${sinSitio.length === 1 ? 'cliente sin ubicar' : 'clientes sin ubicar'}.</b> Ábrelo y pulsa <b>Colocar</b>.</div></div>`;
 
-  h += prog;
-  if (sig){
+  if (!total){
+    // Día sin clientes (por ejemplo un domingo, o todos los quincenales ya visitados)
+    h += `<div class="notice info">${ico('calendar')}<div><b>No hay visitas para este día.</b> ${usaDias() && !ui.todos ? `<button class="inline" data-act="dia">Elegir otro día</button>` : ''}</div></div>`;
+  } else h += prog;
+  if (!total){ /* día vacío: ya está el aviso de arriba */ }
+  else if (sig){
     const t = T[sig.id], ns = notasDe(sig.id);
     h += `<article class="hero${swap ? ' swap' : ''}" aria-label="Siguiente visita">
       <button class="tap" data-act="open" data-id="${sig.id}">
