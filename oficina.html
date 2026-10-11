@@ -545,7 +545,7 @@ const KEY_GEO = 'gnv.geo.v2';
 let geoCache = store.get(KEY_GEO, {});
 let TOKEN = store.get('gnv.oficina2', null), YO = store.get('gnv.oficina.yo', null);
 let R = null, RUTA = null;
-const ui = { hoja:null, imp:null, q:'', dia:'todos', bajas:false, minimapa:null, mapa:null };
+const ui = { hoja:null, imp:null, q:'', dia:'todos', frec:'todas', bajas:false, minimapa:null, mapa:null };
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ico = (id, st) => `<svg class="ico" aria-hidden="true"${st ? ` style="${st}"` : ''}><use href="#i-${id}"/></svg>`;
@@ -555,6 +555,8 @@ const pausa = ms => new Promise(r => setTimeout(r, ms));
 const NOMBRE_DIA = ['', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
 const CORTO = ['', 'L', 'M', 'X', 'J', 'V', 'S', 'D'];
 const COLOR_DIA = ['#5E6879', '#1859D6', '#0E8F7E', '#B7591B', '#7A47C9', '#C2365B', '#5E6879', '#5E6879'];
+const FRECUENCIAS = [7, 14, 21, 28];
+const NOMBRE_FREC = {7:'Semanal', 14:'Quincenal', 21:'Cada 3 semanas', 28:'Cada 4 semanas'};
 const pl = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
 function hace(fecha){
   if (!fecha) return '—';
@@ -656,6 +658,7 @@ function mapearColumnas(filas){
     poblacion: busca(['poblacion','municipio','localidad','ciudad']),
     telefono: busca(['telefono','tlf','tel','movil']),
     dia: busca(['diavisita','dia','diadevisita']),
+    frecuencia: busca(['frecuenciadevisita','frecuenciavisita','frecuencia','periodicidad','frec']),
     lat: busca(['latitud','lat','latitude']),
     lng: busca(['longitud','lng','lon','long','longitude'])
   };
@@ -663,10 +666,23 @@ function mapearColumnas(filas){
   const val = (r, i) => i < 0 ? '' : String(r[i] ?? '').trim();
   const numero = v => { const n = parseFloat(String(v).replace(',', '.')); return Number.isFinite(n) ? n : undefined; };
   const dia = v => { const n = parseInt(v, 10); if (n >= 1 && n <= 7) return n; return DIAS[norm(v)] || null; };
+  // Frecuencia: 7, 14, 21, 28 (con o sin "días"), 1 a 4 semanas, o semanal / quincenal / mensual
+  const frecuencia = v => {
+    const t = norm(v); if (!t) return null;
+    const n = parseInt(t, 10);
+    if (FRECUENCIAS.includes(n)) return n;
+    if (String(n) === t && n >= 1 && n <= 4) return n * 7;
+    if (t.startsWith('seman')) return 7;
+    if (t.startsWith('quincen') || t.startsWith('bisem') || t.includes('2sem') || t.includes('dossem')) return 14;
+    if (t.startsWith('trisem') || t.includes('3sem') || t.includes('tressem')) return 21;
+    if (t.startsWith('mensual') || t.includes('4sem') || t.includes('cuatrosem')) return 28;
+    return 0;   // no se entiende: se avisa y se trata como semanal
+  };
   return filas.slice(1).map(r => ({
     codigo: val(r, col.codigo), nombre: val(r, col.nombre), direccion: val(r, col.direccion),
     poblacion: val(r, col.poblacion), telefono: val(r, col.telefono),
-    dia_visita: dia(val(r, col.dia)), lat: numero(val(r, col.lat)), lng: numero(val(r, col.lng))
+    dia_visita: dia(val(r, col.dia)), frecuencia: col.frecuencia < 0 ? null : frecuencia(val(r, col.frecuencia)),
+    lat: numero(val(r, col.lat)), lng: numero(val(r, col.lng))
   })).filter(f => f.nombre);
 }
 
@@ -711,7 +727,7 @@ async function pintar(){
     if (r.vista === 'rutas'){ if (!R) page.innerHTML = esqueleto('Rutas'); R = await rpc('oficina_resumen', {p_token: TOKEN}); pintarNav(); page.innerHTML = vRutas(); }
     else if (r.vista === 'ruta'){
       if (r.tab !== 'clientes' && r.tab !== 'mapa') return ir(`#/ruta/${encodeURIComponent(r.codigo)}/clientes`);
-      if (ui.rutaCod !== r.codigo){ ui.q = ''; ui.dia = ui.filtroSig || 'todos'; ui.bajas = false; ui.rutaCod = r.codigo; }
+      if (ui.rutaCod !== r.codigo){ ui.q = ''; ui.dia = ui.filtroSig || 'todos'; ui.frec = 'todas'; ui.bajas = false; ui.rutaCod = r.codigo; }
       ui.filtroSig = null;
       if (!RUTA || RUTA.ruta.codigo !== r.codigo) page.innerHTML = esqueleto('Ruta ' + esc(r.codigo));
       RUTA = await rpc('oficina_ruta', {p_token: TOKEN, p_codigo: r.codigo}); page.innerHTML = vRuta(r.tab);
@@ -742,7 +758,7 @@ function vRutas(){
       </tbody></table></div>` : `<div class="emptyb"><b>${R.rutas.length ? 'Ninguna ruta coincide' : 'Todavía no hay rutas'}</b>${R.rutas.length ? 'Prueba con otro código o zona.' : 'Crea la primera con «Nueva ruta».'}</div>`}
     </div>
     <div class="card"><div class="card-h"><h2>Cómo tiene que ser el Excel</h2></div><div class="card-b" style="color:var(--ink-2);font-size:14px;line-height:1.55">
-      Una fila de títulos y un cliente por fila. Columnas que entiende, en cualquier orden: <b>código</b>, <b>nombre</b>, <b>dirección</b>, <b>población</b>, <b>teléfono</b> y <b>día de visita</b> (lunes, martes… o 1 a 7).
+      Una fila de títulos y un cliente por fila. Columnas que entiende, en cualquier orden: <b>código</b>, <b>nombre</b>, <b>dirección</b>, <b>población</b>, <b>teléfono</b>, <b>día de visita</b> (lunes, martes… o 1 a 7) y <b>frecuencia de visita</b> (7, 14, 21 o 28 días; también vale semanal, quincenal o mensual).
       Si trae <b>latitud</b> y <b>longitud</b>, mejor. Al volver a cargar una ruta se actualizan los datos, se respetan las notas y los pines corregidos, y los clientes que ya no vienen quedan dados de baja.</div></div>`;
 }
 
@@ -770,6 +786,7 @@ function filtrarClientes(){
   const q = norm(ui.q);
   return RUTA.clientes.filter(c => (ui.bajas || c.activo)
     && (ui.dia === 'todos' || (ui.dia === 'sindia' && !c.dia_visita) || (ui.dia === 'sinubicar' && !Number.isFinite(c.lat)) || +ui.dia === c.dia_visita)
+    && (ui.frec === 'todas' || (c.frecuencia || 7) === +ui.frec)
     && (!q || norm(`${c.codigo} ${c.nombre} ${c.direccion}`).includes(q)));
 }
 function ubicacion(c){
@@ -784,16 +801,19 @@ function tClientes(){
   const opciones = [['todos', 'Todos', act.length], ...[1,2,3,4,5,6,7].filter(d => cuenta(d)).map(d => [String(d), NOMBRE_DIA[d].slice(0, 3), cuenta(d)]),
     ...(act.some(c => !c.dia_visita) ? [['sindia', 'Sin día', act.filter(c => !c.dia_visita).length]] : []),
     ...(act.some(c => !Number.isFinite(c.lat)) ? [['sinubicar', 'Sin ubicar', act.filter(c => !Number.isFinite(c.lat)).length]] : [])];
+  const frecs = FRECUENCIAS.filter(n => act.some(c => (c.frecuencia || 7) === n));
   return `<div class="tools">
       <label class="search">${ico('search')}<input class="input" id="qClientes" placeholder="Buscar cliente, código o dirección" value="${esc(ui.q)}" autocomplete="off"></label>
       <div class="seg" role="group" aria-label="Filtrar por día">${opciones.map(([v, t, n]) => `<button data-act="filtro" data-id="${v}" aria-pressed="${ui.dia === v}">${t}<span class="num">${n}</span></button>`).join('')}</div>
+      ${frecs.length > 1 ? `<div class="seg" role="group" aria-label="Filtrar por frecuencia">${[['todas', 'Todas'], ...frecs.map(n => [String(n), n === 7 ? 'Semanal' : n === 14 ? 'Quincenal' : n + ' días'])].map(([v, t]) => `<button data-act="filtrofrec" data-id="${v}" aria-pressed="${ui.frec === v}">${t}${v !== 'todas' ? `<span class="num">${act.filter(c => (c.frecuencia || 7) === +v).length}</span>` : ''}</button>`).join('')}</div>` : ''}
       ${RUTA.clientes.some(c => !c.activo) ? `<label class="chk"><input type="checkbox" id="chkBajas" ${ui.bajas ? 'checked' : ''}>Ver dados de baja</label>` : ''}
     </div>
-    ${lista.length ? `<div class="tw"><table class="t"><thead><tr><th class="hide-m">Código</th><th>Cliente</th><th>Día</th><th class="hide-m">Ubicación</th></tr></thead><tbody>
+    ${lista.length ? `<div class="tw"><table class="t"><thead><tr><th class="hide-m">Código</th><th>Cliente</th><th>Día</th><th class="hide-m">Frecuencia</th><th class="hide-m">Ubicación</th></tr></thead><tbody>
     ${lista.map(c => `<tr class="click ${c.activo ? '' : 'off'}" data-act="cliente" data-id="${c.id}">
       <td class="hide-m num">${esc(c.codigo)}</td>
       <td><b>${esc(c.nombre)}</b>${c.activo ? '' : ' <span class="badge plain">De baja</span>'}<span class="sub">${esc(c.direccion)}${c.poblacion ? ', ' + esc(c.poblacion) : ''}</span></td>
       <td>${c.dia_visita ? `<i class="dot" style="background:${COLOR_DIA[c.dia_visita]}"></i>${NOMBRE_DIA[c.dia_visita]}` : '<span style="color:var(--ink-3)">—</span>'}</td>
+      <td class="hide-m">${NOMBRE_FREC[c.frecuencia] || NOMBRE_FREC[7]}</td>
       <td class="hide-m">${ubicacion(c)}</td></tr>`).join('')}
     </tbody></table></div>` : `<div class="emptyb"><b>${act.length ? 'Ningún cliente coincide' : 'Esta ruta no tiene clientes'}</b>${act.length ? 'Cambia el filtro o la búsqueda.' : 'Cárgalos con «Cargar Excel».'}</div>`}`;
 }
@@ -868,6 +888,7 @@ function pintarHoja(){
         <label class="field"><span>Población</span><input class="input" name="poblacion" value="${esc(c.poblacion)}"></label>
         <label class="field"><span>Teléfono</span><input class="input" name="telefono" value="${esc(c.telefono)}" inputmode="tel"></label>
         <label class="field"><span>Día de visita</span><select class="input" name="dia_visita"><option value="">Sin día</option>${[1,2,3,4,5,6,7].map(d => `<option value="${d}" ${c.dia_visita === d ? 'selected' : ''}>${NOMBRE_DIA[d]}</option>`).join('')}</select></label>
+        <label class="field"><span>Frecuencia</span><select class="input" name="frecuencia">${FRECUENCIAS.map(n => `<option value="${n}" ${(c.frecuencia || 7) === n ? 'selected' : ''}>${NOMBRE_FREC[n]} · ${n} días</option>`).join('')}</select></label>
         <label class="field"><span>Estado</span><select class="input" name="activo"><option value="true" ${c.activo ? 'selected' : ''}>Activo</option><option value="false" ${c.activo ? '' : 'selected'}>De baja</option></select></label>
       </div>
       <div class="field"><span style="display:block;font-size:13.5px;font-weight:650;color:var(--ink-2)">Ubicación ${ubicacion(c)}</span>
@@ -898,13 +919,20 @@ function pintarHoja(){
     else {
       const sinSitio = im.filas.filter(f => !Number.isFinite(f.lat)).length;
       const porDia = [1,2,3,4,5,6,7].map(d => [d, im.filas.filter(f => f.dia_visita === d).length]).filter(x => x[1]);
+      const porFrec = FRECUENCIAS.map(n => [n, im.filas.filter(f => f.frecuencia === n).length]).filter(x => x[1]);
+      const frecMal = im.filas.filter(f => f.frecuencia === 0).length;
+      const frecTxt = im.filas.every(f => f.frecuencia === null)
+        ? `<p class="hint" style="margin:0 0 8px">El archivo no trae frecuencia de visita: los clientes nuevos serán semanales y los que ya estaban mantienen la suya.</p>`
+        : `<p class="hint" style="margin:0 0 8px">Por frecuencia: ${porFrec.map(([n, k]) => `${NOMBRE_FREC[n].toLowerCase()} ${k}`).join(' · ')}</p>`
+          + (frecMal ? `<div class="notice" style="margin:0 0 8px">${ico('alert')}<div>${pl(frecMal, 'cliente tiene', 'clientes tienen')} una frecuencia que no entiendo. Se cargarán como semanales; puedes cambiarlo después en su ficha.</div></div>` : '');
       cuerpo = `
       <div class="resumen"><div><b class="num">${im.filas.length}</b><span>clientes</span></div><div><b class="num">${im.filas.length - sinSitio}</b><span>ubicados</span></div>
         <div><b class="num ${sinSitio ? 'warn' : ''}">${sinSitio}</b><span>sin ubicar</span></div></div>
       ${porDia.length ? `<p class="hint" style="margin:0 0 8px">Por día: ${porDia.map(([d, n]) => `${NOMBRE_DIA[d]} ${n}`).join(' · ')}</p>` : `<div class="notice" style="margin:0 0 8px">${ico('calendar')}<div>El archivo no trae día de visita: el comercial verá todos los clientes juntos.</div></div>`}
+      ${frecTxt}
       ${sinSitio ? `<p class="hint" style="margin:0 0 8px">${pl(sinSitio, 'dirección no encontrada', 'direcciones no encontradas')}. Se cargan igualmente y podréis colocarlas en el mapa.</p>` : ''}
       ${r && r.clientes ? `<p class="hint" style="margin:0 0 8px">Ahora la ruta tiene ${r.clientes} clientes. Los que no vengan en este archivo quedarán dados de baja.</p>` : ''}
-      <ul class="preview">${im.filas.slice(0, 6).map(f => `<li><b>${esc(f.nombre)}</b><span>${esc(f.direccion)}${f.dia_visita ? ' · ' + NOMBRE_DIA[f.dia_visita] : ''}</span></li>`).join('')}
+      <ul class="preview">${im.filas.slice(0, 6).map(f => `<li><b>${esc(f.nombre)}</b><span>${esc(f.direccion)}${f.dia_visita ? ' · ' + NOMBRE_DIA[f.dia_visita] : ''}${f.frecuencia ? ' · ' + NOMBRE_FREC[f.frecuencia].toLowerCase() : ''}</span></li>`).join('')}
         ${im.filas.length > 6 ? `<li class="mas">y ${im.filas.length - 6} más…</li>` : ''}</ul>
       <button class="btn primary" style="width:100%;margin-top:16px" data-act="subir">${ico('upload')}Subir a la ruta ${esc(h.id)}</button>
       <button class="btn out" style="width:100%;margin-top:8px" data-act="otro">Elegir otro archivo</button>`;
@@ -954,7 +982,7 @@ async function subir(){
   try {
     im.resultado = await rpc('oficina_importar', {p_token: TOKEN, p_codigo: codigo, p_archivo: im.archivo || '', p_clientes: im.filas.map(f => ({
       codigo: f.codigo, nombre: f.nombre, direccion: f.direccion, poblacion: f.poblacion, telefono: f.telefono,
-      dia_visita: f.dia_visita || '', lat: Number.isFinite(f.lat) ? f.lat : '', lng: Number.isFinite(f.lng) ? f.lng : '', geo: f.geo || ''}))});
+      dia_visita: f.dia_visita || '', frecuencia: f.frecuencia === 0 ? 7 : (f.frecuencia || ''), lat: Number.isFinite(f.lat) ? f.lat : '', lng: Number.isFinite(f.lng) ? f.lng : '', geo: f.geo || ''}))});
     im.trabajando = false; pintarHoja(); R = null; RUTA = null; pintar();
   } catch (e){ im.trabajando = false; pintarHoja(); tratarError(e); }
 }
@@ -965,8 +993,9 @@ async function accion(fn, args, ok){
   catch (e){ tratarError(e); return false; }
 }
 document.addEventListener('click', async e => {
-  const go = e.target.closest('[data-go]');
-  if (go){ if (go.dataset.filtro){ ui.filtroSig = go.dataset.filtro; ui.rutaCod = null; } return ir(go.dataset.go); }
+  // un botón dentro de una fila manda sobre la fila (p. ej. «Cargar Excel» en la lista de rutas)
+  const go = e.target.closest('[data-go]'), dentro = e.target.closest('[data-act]');
+  if (go && !(dentro && go.contains(dentro))){ if (go.dataset.filtro){ ui.filtroSig = go.dataset.filtro; ui.rutaCod = null; } return ir(go.dataset.go); }
   const el = e.target.closest('[data-act]'); if (!el) return;
   const act = el.dataset.act, id = el.dataset.id;
   if (act === 'close') return cerrarHoja();
@@ -979,6 +1008,7 @@ document.addEventListener('click', async e => {
   if (act === 'otro'){ ui.imp = {pob: ui.imp && ui.imp.pob}; return pintarHoja(); }
   if (act === 'cliente') return abrirHoja('cliente', id);
   if (act === 'filtro'){ ui.dia = id; $('#page').innerHTML = vRuta('clientes'); return; }
+  if (act === 'filtrofrec'){ ui.frec = id; $('#page').innerHTML = vRuta('clientes'); return; }
   if (act === 'desbloquear') return accion('oficina_desbloquear', {p_codigo: id}, `Ruta ${id} desbloqueada`).then(ok => ok && cerrarHoja(true));
   if (act === 'cerrarsesiones'){
     if (!confirm(`Todos los dispositivos que tengan abierta la ruta ${id} tendrán que volver a entrar con el buzón. ¿Seguir?`)) return;
@@ -1018,7 +1048,7 @@ document.addEventListener('submit', async e => {
     }
     if (f.id === 'fClienteForm'){
       const d = {nombre: f.nombre.value, direccion: f.direccion.value, poblacion: f.poblacion.value, telefono: f.telefono.value,
-                 dia_visita: f.dia_visita.value, activo: f.activo.value === 'true'};
+                 dia_visita: f.dia_visita.value, frecuencia: f.frecuencia.value, activo: f.activo.value === 'true'};
       const c = RUTA.clientes.find(x => x.id === f.dataset.id);
       if (ui.pinTmp && (ui.pinTmp.lat !== c.lat || ui.pinTmp.lng !== c.lng)) Object.assign(d, {lat: String(ui.pinTmp.lat), lng: String(ui.pinTmp.lng), geo: ui.pinTmp.geo || 'manual'});
       try { await rpc('oficina_guardar_cliente', {p_token: TOKEN, p_id: f.dataset.id, p_datos: d}); toast('Cliente guardado'); cerrarHoja(true); RUTA = null; pintar(); }

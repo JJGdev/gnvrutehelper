@@ -148,6 +148,7 @@ button{font:inherit;color:inherit}
 .row.is-done .name{color:var(--ink-3)}
 .row.is-skip .n,.row.is-nogeo .n{background:var(--warn-soft);color:var(--warn)}
 .tag{display:inline-block;font-size:12px;font-weight:700;color:var(--warn);background:var(--warn-soft);border-radius:6px;padding:1px 7px;margin-left:6px;vertical-align:1px}
+.tag.gris{color:var(--ink-3);background:var(--sunken)}
 .ncount{display:inline-flex;align-items:center;gap:3px;font-size:13px;font-weight:700;color:var(--warn);margin-left:6px;vertical-align:1px}
 .ncount .ico{width:15px;height:15px}
 
@@ -453,7 +454,7 @@ let SES = store.get(KEY_SES, null);          // sesión: {token, ruta, nombre, a
 let S = null;                                 // la ruta de hoy (copia local)
 let geoCache = store.get(KEY_GEO, {});
 let cola = store.get(KEY_COLA, []);           // cambios pendientes de enviar
-const ui = { ficha:null, view:'list', placing:null, busy:false, me:null, todos:false, conexion:true };
+const ui = { ficha:null, view:'list', placing:null, busy:false, me:null, todos:false, conNoTocan:false, conexion:true };
 const keyRuta = () => 'gnv.ruta.v2.' + SES.ruta;
 const save = () => { if (SES && S) store.set(keyRuta(), S); };
 
@@ -473,7 +474,29 @@ const NOMBRE_DIA = ['', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 's
 const fechaVista = () => (S && S.fechaVista) || isoHoy();
 const fmtFecha = iso => new Intl.DateTimeFormat('es-ES', {weekday:'long', day:'numeric', month:'short'}).format(new Date(iso + 'T12:00:00'));
 const usaDias = () => S && S.clients.some(c => c.dia_visita);
-const visibles = () => !S ? [] : (!usaDias() || ui.todos) ? S.clients : S.clients.filter(c => !c.dia_visita || c.dia_visita === diaSemana(fechaVista()));
+// ---------- Frecuencia de visita (7, 14, 21 o 28 días) ----------
+// Un cliente quincenal o mensual solo aparece cuando han pasado sus días desde la última visita "Hecha".
+// Margen de 3 días: si una semana vas a la zona un martes en vez de un lunes, el cliente sale igual.
+const MARGEN_FREC = 3;
+const NOMBRE_FREC = {7:'Semanal', 14:'Quincenal', 21:'Cada 3 semanas', 28:'Cada 4 semanas'};
+const diasEntre = (a, b) => Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 86400000);
+// Última visita hecha ANTES de esa fecha (la de hoy cuenta si miras un día futuro)
+function ultimaAntesDe(c, iso){
+  if (c.status === 'done' && S.fecha < iso) return S.fecha;
+  return c.ultima && c.ultima < iso ? c.ultima : null;
+}
+function toca(c, iso){
+  const f = c.frecuencia || 7;
+  if (f <= 7) return true;
+  const u = ultimaAntesDe(c, iso);
+  return !u || diasEntre(u, iso) >= f - MARGEN_FREC;
+}
+// Clientes del día elegido (o todos), sin mirar la frecuencia
+const delDia = () => !S ? [] : (!usaDias() || ui.todos) ? S.clients : S.clients.filter(c => !c.dia_visita || c.dia_visita === diaSemana(fechaVista()));
+// Los de ese día que no tocan por frecuencia (y nadie ha marcado hoy)
+const noTocan = () => ui.todos ? [] : delDia().filter(c => c.status === 'pending' && !toca(c, fechaVista()));
+// Lo que se ve y se ordena: los que tocan, los ya marcados hoy y, si lo pides, también los que no tocan
+const visibles = () => (ui.todos || ui.conNoTocan) ? delDia() : delDia().filter(c => c.status !== 'pending' || toca(c, fechaVista()));
 const notasDe = id => (S.notas || []).filter(n => n.cliente_id === id);
 
 function dist(a, b){
@@ -875,6 +898,10 @@ function render(swap){
   h += lista('Sin ubicar', sinSitio);
   h += lista('Para luego', skip);
   h += lista('Hechos', done);
+  const nt = noTocan().length;
+  if (nt) h += `<div class="notice info" style="margin-top:18px">${ico('calendar')}<div>${ui.conNoTocan
+    ? `Estás viendo también ${nt === 1 ? 'el cliente que no toca' : `los ${nt} clientes que no tocan`} esta vez. <button class="inline" data-act="notocan">Ocultarlos</button>`
+    : `${nt === 1 ? 'Hay 1 cliente' : `Hay ${nt} clientes`} de este día que no ${nt === 1 ? 'toca' : 'tocan'} esta vez por su frecuencia. <button class="inline" data-act="notocan">Ver también</button>`}</div></div>`;
   h += `<div class="sync" id="sync"></div>`;
   pane.innerHTML = h;
   renderSync(); renderMapa();
@@ -894,7 +921,7 @@ function fila(c, n, t){
   return `<div class="row ${cls}">
     <button class="row-main" data-act="open" data-id="${c.id}">
       <span class="n num">${c.status === 'done' ? ico('check', 'width:16px;height:16px') : located(c) ? n : '?'}</span>
-      <span class="txt"><div class="name">${esc(c.nombre)}${ns.length ? `<span class="ncount">${ico('note')}${ns.length}</span>` : ''}${c.geo === 'aprox' && c.status === 'pending' ? '<span class="tag">Aprox.</span>' : ''}</div>
+      <span class="txt"><div class="name">${esc(c.nombre)}${ns.length ? `<span class="ncount">${ico('note')}${ns.length}</span>` : ''}${c.geo === 'aprox' && c.status === 'pending' ? '<span class="tag">Aprox.</span>' : ''}${!ui.todos && c.status === 'pending' && !toca(c, fechaVista()) ? '<span class="tag gris">No toca</span>' : ''}</div>
       <div class="addr">${esc(c.direccion)}</div></span>
       ${t ? `<span class="dist num">${fmtTramo(t)}<small>desde ${t.desde === 'ti' ? 'ti' : 'el ' + t.desde}</small></span>` : ''}
       ${ico('chevron', '') .replace('class="ico"', 'class="ico chev"')}
@@ -935,6 +962,7 @@ function pintarFicha(){
       <div style="flex:1;min-width:0"><h2 id="sheetTitle">${esc(c.nombre)}</h2>
         <div class="addr">${esc(c.direccion)}${c.poblacion ? ', ' + esc(c.poblacion) : ''}</div>
         ${t ? `<div class="addr num">${ico(t.t != null ? 'walk' : 'route', 'width:16px;height:16px;vertical-align:-3px;margin-right:4px')}${fmtTramo(t)} desde ${t.desde === 'ti' ? 'ti' : 'el ' + t.desde}</div>` : ''}
+        ${(c.frecuencia || 7) > 7 ? `<div class="addr">${ico('calendar', 'width:16px;height:16px;vertical-align:-3px;margin-right:4px')}${NOMBRE_FREC[c.frecuencia]}${(() => { const u = c.status === 'done' ? S.fecha : c.ultima; return u ? ` · última visita ${u === S.fecha ? 'hoy' : 'el ' + new Intl.DateTimeFormat('es-ES', {day:'numeric', month:'short'}).format(new Date(u + 'T12:00:00'))}` : ' · sin visitas registradas'; })()}</div>` : ''}
         ${c.geo === 'aprox' ? '<span class="tag" style="margin:6px 0 0">Ubicación aproximada: revisa el pin</span>' : ''}</div>
       <button class="btn icon" data-act="close" aria-label="Cerrar">${ico('x')}</button>
     </div>
@@ -959,6 +987,9 @@ function pintarFicha(){
 function pintarDia(){
   const cuenta = d => S.clients.filter(c => c.dia_visita === d).length;
   const elegido = ui.diaTmp || fechaVista(), dsel = diaSemana(elegido);
+  const fechaDe = d => d === dsel ? elegido : proximaFecha(d);
+  const tocan = d => S.clients.filter(c => c.dia_visita === d && toca(c, fechaDe(d))).length;
+  const fuera = cuenta(dsel) - tocan(dsel);
   $('#sheetBody').innerHTML = `
     <div class="sh-head"><div style="flex:1"><h2 id="sheetTitle">Día de visita</h2>
       <div class="addr">Elige el día y te cargo solo sus clientes, como en Telynet.</div></div>
@@ -967,8 +998,9 @@ function pintarDia(){
       <input class="input" type="date" id="fDia" value="${elegido}"></label>
     <div class="dias">${[1,2,3,4,5,6,7].filter(d => d <= 5 || cuenta(d)).map(d => `
       <button class="dia${d === dsel ? ' sel' : ''}" data-act="diasem" data-id="${d}" aria-pressed="${d === dsel}">
-        <b>${NOMBRE_DIA[d].slice(0, 3)}</b><span class="num">${cuenta(d)}</span></button>`).join('')}</div>
-    <button class="btn primary" style="width:100%;margin-top:18px" data-act="cargardia">${ico('list')}Cargar las visitas del ${NOMBRE_DIA[dsel]} · ${cuenta(dsel)}</button>
+        <b>${NOMBRE_DIA[d].slice(0, 3)}</b><span class="num">${tocan(d)}</span></button>`).join('')}</div>
+    ${fuera ? `<p class="addr" style="margin:12px 2px 0">Ese día ${fuera === 1 ? 'hay 1 cliente quincenal o mensual que no toca' : `hay ${fuera} clientes quincenales o mensuales que no tocan`}. Podrás verlos igualmente desde la lista.</p>` : ''}
+    <button class="btn primary" style="width:100%;margin-top:18px" data-act="cargardia">${ico('list')}Cargar las visitas del ${NOMBRE_DIA[dsel]} · ${tocan(dsel)}</button>
     <button class="btn" style="width:100%;margin-top:10px" data-act="todos">Ver todos los clientes de la ruta</button>`;
   $('#fDia').addEventListener('change', e => { if (e.target.value){ ui.diaTmp = e.target.value; pintarDia(); } });
 }
@@ -980,13 +1012,22 @@ function proximaFecha(d){
   return f.toLocaleDateString('sv-SE');
 }
 async function cargarDia(iso, todos){
-  S.fechaVista = iso; S.preguntado = isoHoy(); ui.todos = !!todos; ui.diaTmp = null;
+  S.fechaVista = iso; S.preguntado = isoHoy(); ui.todos = !!todos; ui.conNoTocan = false; ui.diaTmp = null;
   cerrarFicha(); save();
   renderCargando(1, 1, null, 'Preparando las visitas…');
   await prepararMatriz(ui.me && ui.me.acc <= PRECISION_MALA ? ui.me : null);
   recalcular(ui.me && ui.me.acc <= PRECISION_MALA ? ui.me : null);
   render(true); fitMap();
   toast(todos ? `Todos los clientes de la ruta: ${visibles().length}` : `Visitas del ${fmtFecha(iso)}: ${visibles().length} clientes`);
+}
+// Mostrar u ocultar los clientes que no tocan por frecuencia, y reordenar
+async function verNoTocan(){
+  ui.conNoTocan = !ui.conNoTocan;
+  renderCargando(1, 1, null, 'Preparando las visitas…');
+  const bueno = ui.me && ui.me.acc <= PRECISION_MALA ? ui.me : null;
+  await prepararMatriz(bueno); recalcular(bueno);
+  render(true); fitMap();
+  toast(ui.conNoTocan ? 'Añadidos a la ruta los que no tocan' : 'Ocultados los que no tocan');
 }
 // ---------- Reiniciar la ruta del día ----------
 function reiniciarRuta(){
@@ -1185,6 +1226,7 @@ document.addEventListener('click', async e => {
   if (act === 'todos') return cargarDia(fechaVista(), true);
   if (act === 'hoy') return cargarDia(isoHoy());
   if (act === 'reiniciar') return reiniciarRuta();
+  if (act === 'notocan') return verNoTocan();
   if (act === 'instalar') return instalar();
   abrirMenu(false);
   if (act === 'refresh') return actualizar(true);
