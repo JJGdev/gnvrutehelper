@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#E9ECF5">
+<meta name="theme-color" content="#ffffff">
 <meta name="color-scheme" content="light">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -13,7 +13,6 @@
 <link rel="icon" type="image/png" href="icons/favicon-64.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <title>GnvRuteHelper</title>
-<link rel="preload" href="fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
 /* ============================================================
@@ -306,219 +305,10 @@ button{font:inherit;color:inherit}
 .me{width:18px;height:18px;border-radius:50%;background:#2B7BFF;border:3px solid #fff;box-shadow:0 0 0 6px rgba(43,123,255,.2),0 1px 4px rgba(0,0,0,.3)}
 .leaflet-container{font-family:var(--font)}
 .leaflet-popup-content{font-size:15px;margin:12px 14px}
-
-/* ============================================================
-   9. TEMA CRISTAL (glassmorphism)
-   Capas: un fondo con luces de color difuminadas (.fondo) y,
-   encima, paneles de cristal esmerilado (blanco translúcido + desenfoque).
-   Si el navegador no sabe desenfocar, los paneles pasan a ser casi opacos.
-   ============================================================ */
-@font-face{font-family:"Geist";src:url("fonts/geist.woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:swap}
-:root{
-  --font:"Geist",system-ui,-apple-system,"Segoe UI",sans-serif;
-  --bg:#E9ECF5; --surface:#FFFFFF; --sunken:rgba(255,255,255,.55); --line:rgba(255,255,255,.75); --line-2:#C3C9D8;
-  --ink:#0E1220; --ink-2:#2C3245; --ink-3:#4A5166;
-  --accent:#3B55E6; --accent-2:#3B55E6; --accent-press:#2A40C2; --accent-soft:rgba(59,85,230,.12); --accent-ink:#2A3DB4; --on-accent-2:#E6EAFF;
-  --ok:#12603F; --ok-2:#22A06B; --ok-soft:rgba(34,160,107,.14);
-  --warn:#8A4200; --warn-soft:rgba(224,122,31,.14); --warn-ink:#5C2C00;
-  --r-sm:14px; --r:20px; --r-lg:26px;
-  --glass:rgba(255,255,255,.58); --glass-fuerte:rgba(255,255,255,.72); --glass-suave:rgba(255,255,255,.42);
-  --blur:blur(24px) saturate(180%);
-  --borde-cristal:inset 0 1px 0 rgba(255,255,255,.92),inset 0 0 0 1px rgba(255,255,255,.55);
-  --sh-1:var(--borde-cristal),0 6px 20px rgba(30,40,90,.07);
-  --sh-2:var(--borde-cristal),0 12px 32px rgba(30,40,90,.10);
-  --sh-pop:var(--borde-cristal),0 24px 60px rgba(30,40,90,.20);
-  --boton-azul:linear-gradient(180deg,#4B64F0,#3046C9);
-  --sombra-azul:inset 0 1px 0 rgba(255,255,255,.35),0 10px 22px rgba(48,70,201,.32);
-  --muelle:cubic-bezier(.32,.72,0,1);
-}
-body{background:var(--bg);letter-spacing:-.005em}
-
-/* --- Fondo con luces (fijo: así el desenfoque del cristal no se recalcula sin parar) --- */
-.fondo{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;background:var(--bg)}
-.fondo i{position:absolute;border-radius:50%;filter:blur(80px);opacity:.5}
-.fondo i:nth-child(1){width:60vmax;height:60vmax;left:-22vmax;top:-24vmax;background:#7C8CFF}
-.fondo i:nth-child(2){width:62vmax;height:62vmax;right:-28vmax;top:22vh;background:#B392FF;opacity:.42}
-.fondo i:nth-child(3){width:50vmax;height:42vmax;left:8vw;bottom:-22vmax;background:#5EE0C1;opacity:.3}
-.app,.login{z-index:1}
-
-/* --- Pieza de cristal reutilizable --- */
-.top,.tabs,.rows,.loading,.menu,.sheet,.login-card,.map-tools .btn,.empty .stack .btn:not(.primary){
-  -webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur)}
-
-/* --- Cabecera flotante --- */
-.top{background:var(--glass);box-shadow:var(--sh-2);border-radius:22px;
-  margin:calc(8px + env(safe-area-inset-top,0px)) calc(10px + env(safe-area-inset-right,0px)) 0 calc(10px + env(safe-area-inset-left,0px));
-  padding:10px 8px 10px 16px}
-.top h1{font-weight:650}
-.top .btn.icon{border-radius:14px}
-#btnRecalc{background:rgba(255,255,255,.62);box-shadow:inset 0 0 0 1px rgba(255,255,255,.85);color:var(--accent-ink);border-radius:14px}
-.daypick{color:var(--accent-ink);font-weight:600}
-.app{background:transparent}
-.map-pane{border-radius:22px;overflow:hidden;margin:10px;box-shadow:var(--sh-1)}
-
-/* --- Pestañas flotantes con indicador que se desliza --- */
-.tabs{position:relative;margin:0 calc(10px + env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) calc(10px + env(safe-area-inset-left,0px));
-  padding:5px;padding-bottom:5px;border-radius:22px;background:var(--glass);box-shadow:var(--sh-2);gap:4px}
-.tabs::before{content:"";position:absolute;top:5px;bottom:5px;left:5px;width:calc(50% - 7px);border-radius:17px;background:#fff;
-  box-shadow:0 4px 14px rgba(30,40,90,.14);transition:transform .45s var(--muelle)}
-.app[data-view="map"] .tabs::before{transform:translateX(calc(100% + 4px))}
-.tabs button{position:relative;height:48px;border-radius:17px;color:var(--ink-3);font-weight:550;font-size:15px;transition:color .2s ease}
-.tabs button[aria-selected="true"]{color:var(--ink);font-weight:650}
-.tabs button .ico{width:19px;height:19px}
-
-/* --- Botones --- */
-.btn{border-radius:var(--r-sm);font-weight:600;background:rgba(255,255,255,.62);box-shadow:inset 0 0 0 1px rgba(255,255,255,.85)}
-.btn.primary{background:var(--boton-azul);box-shadow:var(--sombra-azul);color:#fff}
-.btn.primary:active{background:var(--boton-azul);filter:brightness(.94)}
-.btn.icon,.btn.ghost{box-shadow:none}
-@media (hover:hover){.btn:hover{background:rgba(255,255,255,.8)}.btn.primary:hover{background:var(--boton-azul);filter:brightness(1.05)}.btn.icon:hover,.btn.ghost:hover{background:rgba(255,255,255,.55)}}
-
-/* --- Progreso por paradas (encima de la tarjeta) --- */
-.progreso{margin:2px 4px 14px}
-.progreso .cuenta{display:flex;align-items:baseline;gap:8px}
-.progreso b{font-size:28px;font-weight:700;letter-spacing:-.03em}
-.progreso b small{font-size:28px;color:#7A8197;font-weight:500}
-.progreso span{font-size:14px;color:var(--ink-2)}
-.segs{display:flex;gap:3px;margin-top:8px}
-.segs i{flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,.75);transition:background-color .4s ease,box-shadow .4s ease}
-.segs i.h{background:var(--ok-2)}
-.segs i.s{background:var(--accent);box-shadow:0 0 10px rgba(59,85,230,.55)}
-.segs.cont{height:6px;border-radius:3px;background:rgba(255,255,255,.75);overflow:hidden;display:block}
-.segs.cont em{display:block;height:100%;background:var(--ok-2);border-radius:3px;transform-origin:left;transition:transform .5s var(--muelle)}
-
-/* --- Siguiente parada: cristal denso --- */
-.hero{background:var(--glass-fuerte);color:var(--ink);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 0 0 1px rgba(255,255,255,.6),0 18px 44px rgba(30,40,90,.16);border-radius:var(--r-lg)}
-.hero .meta{color:var(--accent-ink);font-size:13.5px;font-weight:600}
-.hero .pill{background:var(--accent);color:#fff;border-radius:9px;min-width:26px;height:26px;box-shadow:0 4px 12px rgba(59,85,230,.45)}
-.hero .meta .frec{margin-left:auto;height:26px;padding:0 10px;border-radius:13px;background:rgba(255,255,255,.75);color:var(--ink-2);display:inline-flex;align-items:center;font-size:13px}
-.hero h2{font-weight:700;letter-spacing:-.03em}
-.hero .addr,.hero .walk span{color:var(--ink-2)}
-.hero .walk .ico{color:var(--accent)}
-.hero .notes{background:rgba(255,255,255,.6);box-shadow:inset 0 0 0 1px rgba(255,255,255,.8);color:var(--ink-2)}
-.hero .notes .ico{color:var(--accent)}
-.hero .notes small{color:var(--ink-3)}
-.hero .actions .go{background:var(--boton-azul);color:#fff;box-shadow:var(--sombra-azul)}
-.hero .actions .go:active{background:var(--boton-azul);filter:brightness(.94)}
-.hero .actions .soft{background:rgba(255,255,255,.65);box-shadow:inset 0 0 0 1px rgba(255,255,255,.85);color:var(--ink-2)}
-.hero .actions .soft:active{background:rgba(255,255,255,.85)}
-.hero .actions .soft.hecho{background:var(--ok-soft);box-shadow:inset 0 0 0 1px rgba(34,160,107,.25);color:var(--ok)}
-@media (hover:hover){.hero .actions .soft:hover{background:rgba(255,255,255,.85)}.hero .actions .soft.hecho:hover{background:rgba(34,160,107,.2)}.hero .actions .go:hover{background:var(--boton-azul);filter:brightness(1.05)}}
-.hero.done{background:var(--glass-fuerte)}
-.hero.done .meta{color:var(--ok)}
-
-/* --- Lista --- */
-.sec h3{font-size:13.5px;font-weight:600;color:var(--ink-2)}
-.sec span{color:var(--ink-3)}
-.rows{background:var(--glass-suave);box-shadow:var(--sh-1);overflow:visible}
-.row:first-child .row-main{border-radius:var(--r) var(--r) 0 0}
-.row:last-child .row-main{border-radius:0 0 var(--r) var(--r)}
-.row:only-child .row-main{border-radius:var(--r)}
-.row + .row::before{background:rgba(255,255,255,.8)}
-.row-main:active{background:rgba(255,255,255,.55)}
-@media (hover:hover){.row-main:hover{background:rgba(255,255,255,.4)}}
-.n{background:rgba(255,255,255,.8);color:var(--ink-2);border-radius:9px;width:30px;height:30px;font-size:13.5px;font-weight:600}
-.row.is-done .n{background:var(--ok-soft);color:var(--ok)}
-.row.is-skip .n,.row.is-nogeo .n{background:var(--warn-soft);color:var(--warn)}
-.row .name{font-weight:600}
-.row .dist{color:var(--ink)}
-.row .chev{color:#9AA1B4}
-.tag{border-radius:7px;color:var(--warn);background:var(--warn-soft)}
-.tag.gris{background:rgba(255,255,255,.75);color:var(--ink-3)}
-.ncount{color:var(--accent-ink)}
-
-/* --- Avisos --- */
-.notice{background:var(--glass);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);box-shadow:var(--sh-1);color:var(--ink-2)}
-.notice .ico{color:var(--warn)}
-.notice.info{background:var(--glass);color:var(--ink-2)}
-.notice.info .ico{color:var(--accent)}
-.sync{color:var(--ink-3)}
-.loading{background:var(--glass)}
-
-/* --- Hoja inferior y fondo oscurecido --- */
-.scrim{background:rgba(20,26,50,.22);transition:opacity .4s var(--muelle)}
-.sheet{background:rgba(255,255,255,.8);box-shadow:var(--sh-pop);border-radius:28px 28px 0 0;transition:transform .5s var(--muelle)}
-.grab i{background:rgba(14,18,32,.22)}
-.sh-head h2{font-weight:700;letter-spacing:-.025em}
-.qa{color:var(--accent-ink);font-weight:600}
-.qa .c{background:rgba(255,255,255,.7);box-shadow:inset 0 0 0 1px rgba(255,255,255,.9),0 4px 12px rgba(30,40,90,.08)}
-.qa.main .c{background:var(--boton-azul);box-shadow:var(--sombra-azul)}
-.state .btn[data-act="done"]{background:var(--ok-soft);box-shadow:inset 0 0 0 1px rgba(34,160,107,.25);color:var(--ok)}
-.sh-sec{letter-spacing:0;text-transform:none;font-size:13.5px;font-weight:600;color:var(--ink-2)}
-.note{background:rgba(255,255,255,.62);box-shadow:inset 0 0 0 1px rgba(255,255,255,.85);color:var(--ink-2)}
-.note small{color:var(--ink-3)}
-.note button{color:var(--ink-3)}
-.dia{background:rgba(255,255,255,.6);box-shadow:inset 0 0 0 1px rgba(255,255,255,.85)}
-.dia.sel{background:var(--boton-azul);box-shadow:var(--sombra-azul)}
-.pinfix{border-top-color:rgba(14,18,32,.08)}
-.pinfix button{color:var(--accent-ink)}
-
-/* --- Campos --- */
-.input{background:rgba(255,255,255,.72);box-shadow:inset 0 0 0 1px rgba(255,255,255,.95),0 1px 2px rgba(30,40,90,.06);border-radius:var(--r-sm)}
-.input:focus{background:#fff;box-shadow:inset 0 0 0 2px var(--accent),0 0 0 4px rgba(59,85,230,.14)}
-.field > span:first-child{font-weight:550}
-
-/* --- Menú y avisos flotantes --- */
-.menu{background:rgba(255,255,255,.82);border-radius:18px;transform-origin:top right;animation:pop .22s var(--muelle)}
-@keyframes pop{from{opacity:0;transform:scale(.94) translateY(-4px)}to{opacity:1;transform:none}}
-.menu button{border-radius:11px}
-.menu button:active,.menu button:hover{background:rgba(255,255,255,.9)}
-.menu hr{border-top-color:rgba(14,18,32,.08)}
-.toast{background:rgba(14,18,32,.74);-webkit-backdrop-filter:blur(20px) saturate(160%);backdrop-filter:blur(20px) saturate(160%);border-radius:18px;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.15),0 14px 34px rgba(14,18,32,.3);bottom:calc(92px + env(safe-area-inset-bottom,0px));
-  transform:translate(-50%,16px) scale(.96);transition:opacity .25s var(--ease-out),transform .35s var(--ease-out)}
-.toast.show{transform:translate(-50%,0) scale(1)}
-.toast button{background:rgba(255,255,255,.14);color:#fff;border-radius:11px;padding:8px 12px}
-
-/* --- Pantalla de entrada --- */
-.login{background:transparent}
-.login-hero{background:none;color:var(--ink)}
-.login-art .ria{stroke:rgba(59,85,230,.10)}
-.login-art .calle{stroke:rgba(14,18,32,.07)}
-.login-art .ruta{stroke:var(--accent)}
-.login-art .parada circle{fill:#fff;stroke:var(--accent)}
-.login-art .hechas circle{fill:rgba(34,160,107,.7)}
-.login-art .meta circle{fill:var(--accent)}
-.login-art .meta path{stroke:#fff}
-.wordmark{background:rgba(255,255,255,.6);box-shadow:inset 0 0 0 1px rgba(255,255,255,.85);color:var(--ink)}
-.wordmark .ico{color:var(--accent)}
-.login-copy p{color:var(--ink-2)}
-.login-card{background:var(--glass);box-shadow:var(--sh-pop);border-radius:28px}
-/* las luces solo se mueven en la pantalla de entrada (en la app quietas: ahorra batería) */
-body:has(.login:not([hidden])) .app{visibility:hidden}
-body:has(.login:not([hidden])) .fondo i{animation:flota 18s ease-in-out infinite}
-body:has(.login:not([hidden])) .fondo i:nth-child(2){animation-duration:22s;animation-direction:reverse}
-@keyframes flota{0%,100%{transform:translate(0,0)}50%{transform:translate(4vmax,3vmax)}}
-
-/* --- Mapa --- */
-.map-tools .btn{background:var(--glass-fuerte);box-shadow:var(--sh-2);border-radius:16px}
-.map-banner{background:rgba(14,18,32,.74);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);border-radius:18px}
-.map-banner .save{color:var(--accent-ink)}
-.mk{border-color:var(--accent);color:var(--accent-ink);font-family:var(--font)}
-.mk.next{background:var(--boton-azul);box-shadow:0 0 0 4px rgba(59,85,230,.22),0 4px 10px rgba(30,40,90,.35)}
-.mk.done{background:#E6F5EE;border-color:var(--ok-2);color:var(--ok)}
-.mk.skip{background:#FDF0E2;border-color:#E07A1F;color:var(--warn)}
-.leaflet-container{background:#ECEBE6}
-
-/* --- Escritorio --- */
-@media (min-width:880px){
-  .body{gap:0}
-  .list-pane{padding:16px 10px 32px 10px}
-  .map-pane{margin:16px 10px 10px 6px}
-}
-
-/* --- Sin desenfoque disponible: cristal casi opaco --- */
-@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
-  :root{--glass:rgba(255,255,255,.9);--glass-fuerte:rgba(255,255,255,.95);--glass-suave:rgba(255,255,255,.85)}
-  .sheet{background:#fff}.menu{background:#fff}.toast{background:#1B2030}
-}
-
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
-<div class="fondo" aria-hidden="true"><i></i><i></i><i></i></div>
 <div class="app" id="app" data-view="list">
   <header class="top">
     <div class="title">
@@ -970,28 +760,11 @@ function tratarError(e){
   toast('Algo ha fallado: ' + e.message);
 }
 
-// ---------- Animación de la lista (técnica FLIP) ----------
-// Se apunta dónde está cada fila, se repinta la lista y cada fila "viaja" desde su sitio
-// anterior al nuevo. Así, al marcar Hecho, el cliente baja suavemente a la sección de hechos.
-const sinMovimiento = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
-function conFlip(pintarFn){
-  const pane = $('#listPane'), antes = new Map();
-  if (!sinMovimiento()) pane.querySelectorAll('[data-flip]').forEach(el => antes.set(el.dataset.flip, el.getBoundingClientRect().top));
-  pintarFn();
-  if (sinMovimiento() || !antes.size || !pane.animate) return;
-  pane.querySelectorAll('[data-flip]').forEach(el => {
-    const a = antes.get(el.dataset.flip);
-    if (a === undefined){ el.animate([{opacity:0, transform:'scale(.98)'}, {opacity:1, transform:'none'}], {duration:280, easing:'cubic-bezier(.23,1,.32,1)'}); return; }
-    const dy = a - el.getBoundingClientRect().top;
-    if (Math.abs(dy) > 1) el.animate([{transform:`translateY(${dy}px)`}, {transform:'none'}], {duration:480, easing:'cubic-bezier(.32,.72,0,1)'});
-  });
-}
-
 // ---------- Acciones sobre un cliente ----------
 function marcar(id, status){
   const c = byId(id), antes = c.status;
   c.status = status; c.doneAt = status === 'done' ? Date.now() : 0;
-  cerrarFicha(); save(); conFlip(() => render(true));
+  cerrarFicha(); save(); render(true);
   enviar('marcar_visita', {p_cliente: id, p_estado: status});
   const txt = {done:`${c.nombre}: hecho`, skipped:`${c.nombre}: para luego`, pending:`${c.nombre} vuelve a la ruta`}[status];
   toast(txt, status !== 'pending' ? {label:'Deshacer', fn:() => marcar(id, antes)} : null);
@@ -1083,14 +856,8 @@ function render(swap){
   const quedaT = Object.values(T).reduce((a, b) => a + (b.t || 0), 0);
   const quedaD = Object.values(T).reduce((a, b) => a + b.d, 0);
   const calle = Object.values(T).some(t => t.t != null);
-  // Una rayita por parada: verde = hecha, azul = la siguiente. Con muchas paradas, barra continua.
-  const queda = quedaD ? (calle ? `quedan ${fmtMin(quedaT)} andando` : `quedan ${fmtDist(quedaD)}`) : (hechos === total ? 'todas hechas' : '');
-  const sigPos = sig ? hechos : -1;
-  const segs = total <= 30
-    ? `<div class="segs" aria-hidden="true">${Array.from({length: total}, (_, i) => `<i class="${i < hechos ? 'h' : i === sigPos ? 's' : ''}"></i>`).join('')}</div>`
-    : `<div class="segs cont" aria-hidden="true"><em style="transform:scaleX(${total ? hechos/total : 0})"></em></div>`;
-  const prog = `<div class="progreso num" role="status" aria-label="${hechos} de ${total} visitas hechas">
-    <div class="cuenta"><b>${hechos}<small>/${total}</small></b><span>visitas${queda ? ' · ' + queda : ''}</span></div>${segs}</div>`;
+  const prog = `<div class="prog num"><span><b>${hechos}</b> de ${total}</span><div class="bar"><i style="transform:scaleX(${total ? hechos/total : 0})"></i></div>
+    <span>${quedaD ? (calle ? `quedan ${fmtMin(quedaT)}` : `quedan ${fmtDist(quedaD)}`) : ''}</span></div>`;
 
   let h = '';
   if (S.start && S.start.src === 'gps' && S.start.acc > PRECISION_MALA)
@@ -1102,12 +869,11 @@ function render(swap){
   if (sinSitio.length)
     h += `<div class="notice">${ico('alert')}<div><b>${sinSitio.length} ${sinSitio.length === 1 ? 'cliente sin ubicar' : 'clientes sin ubicar'}.</b> Ábrelo y pulsa <b>Colocar</b>.</div></div>`;
 
-  h += prog;
   if (sig){
     const t = T[sig.id], ns = notasDe(sig.id);
     h += `<article class="hero${swap ? ' swap' : ''}" aria-label="Siguiente visita">
       <button class="tap" data-act="open" data-id="${sig.id}">
-        <div class="meta"><span class="pill num">${numero(sig.id)}</span>Siguiente parada${(sig.frecuencia || 7) > 7 ? `<span class="frec">${NOMBRE_FREC[sig.frecuencia]}</span>` : ''}</div>
+        <div class="meta"><span class="pill num">${numero(sig.id)}</span>Siguiente parada</div>
         <h2>${esc(sig.nombre)}</h2>
         <div class="addr">${esc(sig.direccion)}${sig.geo === 'aprox' ? ' · ubicación aproximada' : ''}</div>
         ${t ? `<div class="walk num">${ico(t.t != null ? 'walk' : 'route')}${fmtTramo(t)} <span>${t.t != null ? `andando · ${fmtDist(t.d)}` : 'en línea recta'} desde ${t.desde === 'ti' ? 'ti' : 'el ' + t.desde}</span></div>` : ''}
@@ -1115,13 +881,14 @@ function render(swap){
       ${ns.length ? `<div class="notes">${ico('note')}<div>${ns.slice(0, 2).map(n => `<p>${esc(n.texto)} <small>· ${esc(n.autor || 'Anónimo')}, ${hace(n.creada)}</small></p>`).join('')}</div></div>` : ''}
       <div class="actions">
         <a class="btn go" href="${linkIr(sig)}" target="_blank" rel="noopener">${ico('go')}Ir</a>
-        <button class="btn soft hecho" data-act="done" data-id="${sig.id}">${ico('check')}Hecho</button>
+        <button class="btn soft" data-act="done" data-id="${sig.id}">${ico('check')}Hecho</button>
         <button class="btn soft" data-act="skip" data-id="${sig.id}">${ico('skip')}Luego</button>
       </div>
+      ${prog}
     </article>`;
   } else if (!sinSitio.length && !skip.length){
     h += `<article class="hero done swap"><div class="meta">${ico('flag')}Ruta terminada</div>
-      <h2>Buen trabajo</h2><div class="addr">Has visitado ${hechos} de ${total} clientes.</div>
+      <h2>Buen trabajo</h2><div class="addr">Has visitado ${hechos} de ${total} clientes.</div>${prog}
       <div class="actions" style="grid-template-columns:1fr"><button class="btn soft" data-act="reiniciar">${ico('undo')}Volver a empezar la ruta</button></div></article>`;
   } else if (!sinSitio.length){
     h += `<div class="notice info">${ico('skip')}<div>Solo quedan los que dejaste para luego. Ábrelos y pulsa <b>Volver a la ruta</b>.</div></div>`;
@@ -1151,7 +918,7 @@ function renderSync(){
 function fila(c, n, t){
   const cls = c.status === 'done' ? 'is-done' : c.status === 'skipped' ? 'is-skip' : !located(c) ? 'is-nogeo' : '';
   const ns = notasDe(c.id);
-  return `<div class="row ${cls}" data-flip="${c.id}">
+  return `<div class="row ${cls}">
     <button class="row-main" data-act="open" data-id="${c.id}">
       <span class="n num">${c.status === 'done' ? ico('check', 'width:16px;height:16px') : located(c) ? n : '?'}</span>
       <span class="txt"><div class="name">${esc(c.nombre)}${ns.length ? `<span class="ncount">${ico('note')}${ns.length}</span>` : ''}${c.geo === 'aprox' && c.status === 'pending' ? '<span class="tag">Aprox.</span>' : ''}${!ui.todos && c.status === 'pending' && !toca(c, fechaVista()) ? '<span class="tag gris">No toca</span>' : ''}</div>
