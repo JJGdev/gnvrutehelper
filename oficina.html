@@ -345,13 +345,6 @@ body.admin{font-size:15px}
 .btn.out:hover{background:#F4F6F9}
 .btn.danger{color:var(--danger)}
 /* tira de cifras */
-.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--surface);border-radius:var(--r);box-shadow:var(--sh-1);margin-bottom:22px;overflow:hidden}
-.stat{padding:16px 18px;position:relative}
-.stat + .stat::before{content:"";position:absolute;left:0;top:16px;bottom:16px;width:1px;background:var(--line)}
-.stat span{display:block;font-size:13px;color:var(--ink-3);font-weight:550}
-.stat b{display:block;font-size:26px;letter-spacing:-.02em;margin-top:4px;font-weight:700}
-.stat b small{font-size:15px;color:var(--ink-3);font-weight:550;letter-spacing:0}
-.stat.alert b{color:var(--warn)}
 /* tarjetas y tablas */
 .card{background:var(--surface);border-radius:var(--r);box-shadow:var(--sh-1);margin-bottom:22px;overflow:hidden}
 .card-h{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
@@ -375,11 +368,6 @@ table.t{width:100%;border-collapse:collapse;font-size:14px}
 .t .off td{color:var(--ink-3)}
 .codeb{display:inline-flex;align-items:center;justify-content:center;min-width:46px;height:28px;padding:0 8px;border-radius:7px;background:var(--accent-soft);color:var(--accent-ink);font-weight:800;font-size:13px;letter-spacing:.02em}
 .codeb.big{height:40px;min-width:62px;font-size:17px;border-radius:10px}
-.prog{display:flex;align-items:center;gap:10px;min-width:180px}
-.prog .bar{flex:1;height:7px;background:#E9EDF2}
-.prog .bar i{background:var(--accent-2)}
-.prog.ok .bar i{background:var(--ok)}
-.prog span{font-size:13px;color:var(--ink-2);min-width:52px;text-align:right;font-variant-numeric:tabular-nums}
 .badge{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 9px;border-radius:12px;font-size:12.5px;font-weight:650;white-space:nowrap;background:var(--sunken);color:var(--ink-2)}
 .badge::before{content:"";width:6px;height:6px;border-radius:3px;background:currentColor;opacity:.85}
 .badge.plain::before{display:none}
@@ -392,12 +380,6 @@ table.t{width:100%;border-collapse:collapse;font-size:14px}
 .days i b{font-size:13px;color:var(--ink);font-weight:650}
 .days i.z b{color:var(--line-2)}
 .dot{display:inline-block;width:9px;height:9px;border-radius:5px;margin-right:6px;vertical-align:0}
-.attn{list-style:none;margin:0;padding:0}
-.attn li{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--line);font-size:14px}
-.attn li:last-child{border-bottom:0}
-.attn li .ico{color:var(--warn);width:20px;height:20px}
-.attn li div{flex:1}
-.attn-ok{display:flex;align-items:center;gap:10px;padding:16px 18px;color:var(--ok);font-weight:600;font-size:14px}
 /* barra de herramientas de tablas */
 .tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px 18px;border-bottom:1px solid var(--line)}
 .search{position:relative;flex:1;min-width:200px;max-width:340px}
@@ -420,10 +402,6 @@ table.t{width:100%;border-collapse:collapse;font-size:14px}
 .emptyb b{display:block;color:var(--ink);font-size:16px;margin-bottom:4px}
 .skel{height:14px;border-radius:7px;background:linear-gradient(90deg,#EEF1F5 0,#F6F8FA 50%,#EEF1F5 100%);background-size:200% 100%;animation:sk 1.2s linear infinite}
 @keyframes sk{to{background-position:-200% 0}}
-.notes-l .nt{display:flex;gap:12px;padding:12px 18px;border-bottom:1px solid var(--line);font-size:14px}
-.notes-l .nt:last-child{border-bottom:0}
-.notes-l .nt div{flex:1}
-.notes-l .nt small{display:block;color:var(--ink-3);font-size:12.5px;margin-top:2px}
 /* panel lateral (en escritorio) / hoja (en móvil) */
 @media (min-width:900px){
   .adm-sheet{left:auto;top:0;right:0;bottom:0;margin:0;width:460px;max-width:none;max-height:none;border-radius:0;transform:translateX(100%);padding-bottom:0}
@@ -442,14 +420,7 @@ select.input{padding-right:34px;background-image:linear-gradient(45deg,transpare
 .sheet .input{font-size:16px;height:46px}
 .hint{font-size:13px;color:var(--ink-3);margin:-8px 0 14px}
 .danger-zone{margin-top:26px;padding-top:18px;border-top:1px solid var(--line)}
-.rolecards{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
-.rolecards label{display:block;border-radius:var(--r-sm);box-shadow:inset 0 0 0 1px var(--line-2);padding:12px;cursor:pointer;font-size:13px;color:var(--ink-3)}
-.rolecards label b{display:block;color:var(--ink);font-size:14.5px;margin-bottom:2px}
-.rolecards input{position:absolute;opacity:0;pointer-events:none}
-.rolecards label:has(input:checked){box-shadow:inset 0 0 0 2px var(--accent);background:var(--accent-soft)}
-.rolecards label:has(input:focus-visible){outline:2px solid var(--accent-2);outline-offset:2px}
 /* responsive */
-@media (max-width:1100px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.stat:nth-child(3)::before{display:none}.stat:nth-child(n+3){border-top:1px solid var(--line)}}
 @media (max-width:899px){
   .adm{grid-template-columns:1fr;grid-template-rows:auto 1fr}
   .side{flex-direction:row;align-items:center;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px;gap:8px;overflow-x:auto}
@@ -470,7 +441,7 @@ select.input{padding-right:34px;background-image:linear-gradient(45deg,transpare
     <div class="login-copy">
       <div class="wordmark"><svg class="ico"><use href="#i-route"/></svg>GnvRuteHelper · Oficina</div>
       <h1 style="margin-top:22px">Todas las rutas, en un panel.</h1>
-      <p>Progreso del día, clientes, cargas de Excel y accesos.</p>
+      <p>Carga de rutas, clientes y días de visita.</p>
     </div>
   </header>
   <form class="login-card" id="loginForm" novalidate>
@@ -546,8 +517,11 @@ select.input{padding-right:34px;background-image:linear-gradient(45deg,transpare
 <script>
 /* =====================================================================
    GnvRuteHelper · Panel de oficina
-   Administradores y coordinadores gestionan aquí todas las rutas.
-   Cada pantalla tiene su dirección (#/resumen, #/rutas, #/ruta/1QA…),
+   Un único usuario administrador gestiona aquí las rutas: crearlas,
+   cargar su Excel, editar clientes y días de visita, y borrarlas.
+   El panel NO muestra el progreso de los comerciales: ni visitas,
+   ni horas, ni dispositivos. Solo la gestión de rutas.
+   Cada pantalla tiene su dirección (#/rutas, #/ruta/1QA…),
    así el botón "atrás" del navegador funciona como se espera.
    ===================================================================== */
 const SUPABASE_URL = 'https://dwzuasbezvemzmokcnrn.supabase.co';
@@ -570,7 +544,7 @@ const store = {   // la sesión de oficina se borra al cerrar el navegador; las 
 const KEY_GEO = 'gnv.geo.v2';
 let geoCache = store.get(KEY_GEO, {});
 let TOKEN = store.get('gnv.oficina2', null), YO = store.get('gnv.oficina.yo', null);
-let R = null, RUTA = null, USUARIOS = null;
+let R = null, RUTA = null;
 const ui = { hoja:null, imp:null, q:'', dia:'todos', bajas:false, minimapa:null, mapa:null };
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -578,7 +552,6 @@ const ico = (id, st) => `<svg class="ico" aria-hidden="true"${st ? ` style="${st
 const norm = s => String(s ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
 const addrKey = c => norm(`${c.direccion}|${c.poblacion}`);
 const pausa = ms => new Promise(r => setTimeout(r, ms));
-const esAdmin = () => YO && YO.rol === 'admin';
 const NOMBRE_DIA = ['', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
 const CORTO = ['', 'L', 'M', 'X', 'J', 'V', 'S', 'D'];
 const COLOR_DIA = ['#5E6879', '#1859D6', '#0E8F7E', '#B7591B', '#7A47C9', '#C2365B', '#5E6879', '#5E6879'];
@@ -591,14 +564,13 @@ function hace(fecha){
   if (s < 86400) return `hace ${Math.round(s/3600)} h`;
   return new Intl.DateTimeFormat('es-ES', {day:'numeric', month:'short'}).format(new Date(fecha));
 }
-const hora = f => f ? new Intl.DateTimeFormat('es-ES', {hour:'2-digit', minute:'2-digit'}).format(new Date(f)) : '—';
 let tTimer;
 function toast(t){ $('#toastText').textContent = t; $('#toastAct').hidden = true; $('#toast').classList.add('show');
   clearTimeout(tTimer); tTimer = setTimeout(() => $('#toast').classList.remove('show'), 3800); }
 const ERRORES = {
   SOLO_ADMIN:'Eso solo puede hacerlo un administrador.', CODIGO_NO_VALIDO:'El código de ruta solo admite letras y números (de 2 a 10).',
-  FALTA_BUZON:'Una ruta nueva necesita buzón.', RUTA_NO_EXISTE:'Esa ruta ya no existe.', USUARIO_NO_VALIDO:'El usuario solo admite letras, números, punto y guion (de 3 a 30).',
-  CLAVE_CORTA:'La contraseña debe tener al menos 4 caracteres.', NO_A_TI_MISMO:'No puedes quitarte a ti mismo el rol de administrador ni desactivarte.',
+  FALTA_BUZON:'Una ruta nueva necesita buzón.', RUTA_NO_EXISTE:'Esa ruta ya no existe.',
+  CLAVE_CORTA:'La contraseña debe tener al menos 4 caracteres.',
   CLAVE_ACTUAL_MAL:'La contraseña actual no es correcta.', CLIENTE_NO_EXISTE:'Ese cliente ya no existe.'
 };
 function tratarError(e){
@@ -709,7 +681,7 @@ async function entrar(usuario, clave){
 }
 function salir(msg){
   if (TOKEN) rpc('oficina_salir', {p_token: TOKEN}).catch(() => {});
-  TOKEN = null; YO = null; R = RUTA = USUARIOS = null; store.del('gnv.oficina2'); store.del('gnv.oficina.yo');
+  TOKEN = null; YO = null; R = RUTA = null; store.del('gnv.oficina2'); store.del('gnv.oficina.yo');
   cerrarHoja(true);
   $('#app').hidden = true; $('#login').hidden = false;
   $('#loginError').textContent = msg || ''; setTimeout(() => $('#fUsuario').focus(), 300);
@@ -717,88 +689,46 @@ function salir(msg){
 
 // ---------- Navegación ----------
 function ruta(){
-  const p = (location.hash.replace(/^#\/?/, '') || 'resumen').split('/');
+  const p = (location.hash.replace(/^#\/?/, '') || 'rutas').split('/');
   return {vista: p[0], codigo: p[1] ? decodeURIComponent(p[1]) : null, tab: p[2] || 'clientes'};
 }
 const ir = h => { if (location.hash !== h) location.hash = h; else pintar(); };
 window.addEventListener('hashchange', () => { cerrarHoja(true); pintar(); });
 function pintarNav(){
   const v = ruta().vista;
-  const items = [['resumen', 'chart', 'Resumen'], ['rutas', 'route', 'Rutas', R ? R.rutas.length : ''],
-                 ...(esAdmin() ? [['usuarios', 'users', 'Usuarios', USUARIOS ? USUARIOS.length : '']] : []), ['cuenta', 'user', 'Mi cuenta']];
+  const items = [['rutas', 'route', 'Rutas', R ? R.rutas.length : ''], ['cuenta', 'user', 'Mi cuenta']];
   $('#nav').innerHTML = items.map(([id, i, t, n]) => `<button data-go="#/${id}" ${(v === id || (v === 'ruta' && id === 'rutas')) ? 'aria-current="page"' : ''}>${ico(i)}${t}${n !== undefined && n !== '' ? `<span class="cnt num">${n}</span>` : ''}</button>`).join('');
   $('#meCard').innerHTML = `<span class="avatar">${esc((YO.nombre || YO.usuario).slice(0, 2))}</span>
-    <div class="who"><b>${esc(YO.nombre || YO.usuario)}</b><span>${YO.rol === 'admin' ? 'Administrador' : 'Coordinador'}</span></div>
+    <div class="who"><b>${esc(YO.nombre || YO.usuario)}</b><span>Administrador</span></div>
     <button class="btn icon" data-act="salir" aria-label="Cerrar sesión" title="Cerrar sesión">${ico('logout')}</button>`;
 }
 async function pintar(){
   if (!TOKEN) return;
   const r = ruta();
-  if (r.vista === 'usuarios' && !esAdmin()) return ir('#/resumen');
   pintarNav();
   const page = $('#page');
   try {
-    if (r.vista === 'resumen'){ if (!R) page.innerHTML = esqueleto('Resumen'); R = await rpc('oficina_resumen', {p_token: TOKEN}); pintarNav(); page.innerHTML = vResumen(); }
-    else if (r.vista === 'rutas'){ if (!R) page.innerHTML = esqueleto('Rutas'); R = await rpc('oficina_resumen', {p_token: TOKEN}); pintarNav(); page.innerHTML = vRutas(); }
+    if (r.vista === 'rutas'){ if (!R) page.innerHTML = esqueleto('Rutas'); R = await rpc('oficina_resumen', {p_token: TOKEN}); pintarNav(); page.innerHTML = vRutas(); }
     else if (r.vista === 'ruta'){
+      if (r.tab !== 'clientes' && r.tab !== 'mapa') return ir(`#/ruta/${encodeURIComponent(r.codigo)}/clientes`);
       if (ui.rutaCod !== r.codigo){ ui.q = ''; ui.dia = ui.filtroSig || 'todos'; ui.bajas = false; ui.rutaCod = r.codigo; }
       ui.filtroSig = null;
       if (!RUTA || RUTA.ruta.codigo !== r.codigo) page.innerHTML = esqueleto('Ruta ' + esc(r.codigo));
       RUTA = await rpc('oficina_ruta', {p_token: TOKEN, p_codigo: r.codigo}); page.innerHTML = vRuta(r.tab);
       if (r.tab === 'mapa') pintarMapaRuta();
     }
-    else if (r.vista === 'usuarios'){ if (!USUARIOS) page.innerHTML = esqueleto('Usuarios'); USUARIOS = await rpc('oficina_usuarios', {p_token: TOKEN}); pintarNav(); page.innerHTML = vUsuarios(); }
     else if (r.vista === 'cuenta') page.innerHTML = vCuenta();
-    else return ir('#/resumen');
+    else return ir('#/rutas');
   } catch (e){ tratarError(e); if (e.message === 'RUTA_NO_EXISTE') ir('#/rutas'); }
 }
 const esqueleto = t => `<div class="ph"><div class="t"><h1>${t}</h1></div></div>
   <div class="card"><div class="card-b" style="display:grid;gap:14px">${'<div class="skel"></div>'.repeat(6)}</div></div>`;
 
-// ---------- RESUMEN ----------
-function estadoHoy(r){
-  if (r.bloqueada) return '<span class="badge bad">Bloqueada</span>';
-  if (!r.clientes) return '<span class="badge plain">Sin clientes</span>';
-  if (r.hoy && r.hechos >= r.hoy) return '<span class="badge ok">Terminada</span>';
-  if (r.hechos || r.luego) return '<span class="badge info">En ruta</span>';
-  return '<span class="badge plain">Sin empezar</span>';
-}
-function vResumen(){
-  const rs = R.rutas, fecha = new Intl.DateTimeFormat('es-ES', {weekday:'long', day:'numeric', month:'long'}).format(new Date(R.fecha + 'T12:00:00'));
-  const prev = rs.reduce((a, r) => a + r.hoy, 0), hechos = rs.reduce((a, r) => a + r.hechos, 0);
-  const sinUb = rs.reduce((a, r) => a + r.sin_ubicar, 0), disp = rs.reduce((a, r) => a + r.dispositivos, 0);
-  const activas = rs.filter(r => r.hechos || r.luego).length;
-  const avisos = [];
-  rs.filter(r => r.bloqueada).forEach(r => avisos.push(['lock', `<b>${esc(r.codigo)}</b> está bloqueada por intentos fallidos de buzón.`, r.codigo, esAdmin() ? `<button class="btn sm out" data-act="desbloquear" data-id="${esc(r.codigo)}">Desbloquear</button>` : '']));
-  rs.filter(r => r.sin_ubicar).forEach(r => avisos.push(['pin', `<b>${esc(r.codigo)}</b> tiene ${pl(r.sin_ubicar, 'cliente sin ubicar', 'clientes sin ubicar')} en el mapa.`, r.codigo, `<button class="btn sm out" data-go="#/ruta/${esc(r.codigo)}/clientes" data-filtro="sinubicar">Revisar</button>`]));
-  rs.filter(r => !r.clientes).forEach(r => avisos.push(['upload', `<b>${esc(r.codigo)}</b> no tiene clientes cargados.`, r.codigo, `<button class="btn sm out" data-act="importar" data-id="${esc(r.codigo)}">Cargar Excel</button>`]));
-  return `<div class="ph"><div class="t"><h1>Resumen</h1><p>${fecha.charAt(0).toUpperCase() + fecha.slice(1)} · se actualiza cada minuto</p></div>
-      <div class="acts"><button class="btn sm out" data-act="refrescar">${ico('refresh')}Actualizar</button></div></div>
-    <div class="stats">
-      <div class="stat"><span>Visitas de hoy</span><b class="num">${hechos} <small>de ${prev}</small></b></div>
-      <div class="stat"><span>Rutas en marcha</span><b class="num">${activas} <small>de ${rs.length}</small></b></div>
-      <div class="stat"><span>Dispositivos conectados</span><b class="num">${disp}</b></div>
-      <div class="stat ${sinUb ? 'alert' : ''}"><span>Clientes sin ubicar</span><b class="num">${sinUb}</b></div>
-    </div>
-    <div class="card"><div class="card-h"><h2>Progreso de hoy</h2><span class="muted">Clientes del ${NOMBRE_DIA[R.dia]} de cada ruta</span></div>
-      ${rs.length ? `<div class="tw"><table class="t"><thead><tr><th>Ruta</th><th class="hide-m">Zona</th><th>Progreso</th><th class="r hide-m">Para luego</th><th class="hide-m">Última visita</th><th>Estado</th></tr></thead><tbody>
-      ${rs.map(r => `<tr class="click" data-go="#/ruta/${esc(r.codigo)}/clientes">
-        <td><span class="codeb">${esc(r.codigo)}</span></td><td class="hide-m">${esc(r.nombre || '—')}</td>
-        <td><div class="prog ${r.hoy && r.hechos >= r.hoy ? 'ok' : ''}"><div class="bar"><i style="transform:scaleX(${r.hoy ? Math.min(1, r.hechos/r.hoy) : 0})"></i></div><span>${r.hechos} / ${r.hoy}</span></div></td>
-        <td class="r num hide-m">${r.luego || '—'}</td><td class="hide-m num">${hora(r.ultima)}</td><td>${estadoHoy(r)}</td></tr>`).join('')}
-      </tbody></table></div>` : `<div class="emptyb"><b>Todavía no hay rutas</b>${esAdmin() ? 'Crea la primera desde Rutas.' : 'Pide a un administrador que las cree.'}</div>`}
-    </div>
-    <div class="card"><div class="card-h"><h2>Necesita atención</h2></div>
-      ${avisos.length ? `<ul class="attn">${avisos.map(([i, t, c, b]) => `<li>${ico(i)}<div>${t}</div>${b}</li>`).join('')}</ul>`
-        : `<div class="attn-ok">${ico('check')}Todo en orden: rutas desbloqueadas, con clientes y ubicados.</div>`}
-    </div>`;
-}
-
 // ---------- RUTAS ----------
 function vRutas(){
   const q = norm(ui.q), rs = R.rutas.filter(r => !q || norm(r.codigo + ' ' + r.nombre).includes(q));
   return `<div class="ph"><div class="t"><h1>Rutas</h1><p>${pl(R.rutas.length, 'ruta', 'rutas')} · ${pl(R.rutas.reduce((a, r) => a + r.clientes, 0), 'cliente', 'clientes')} en total</p></div>
-      <div class="acts">${esAdmin() ? `<button class="btn sm primary" data-act="nuevaruta">${ico('plus-sq')}Nueva ruta</button>` : ''}</div></div>
+      <div class="acts"><button class="btn sm primary" data-act="nuevaruta">${ico('plus-sq')}Nueva ruta</button></div></div>
     <div class="card">
       <div class="tools"><label class="search">${ico('search')}<input class="input" id="qRutas" placeholder="Buscar por código o zona" value="${esc(ui.q)}" autocomplete="off"></label></div>
       ${rs.length ? `<div class="tw"><table class="t"><thead><tr><th>Ruta</th><th>Zona</th><th class="r">Clientes</th><th class="hide-m">Por día</th><th class="r hide-m">Sin ubicar</th><th class="hide-m">Última carga</th><th></th></tr></thead><tbody>
@@ -809,7 +739,7 @@ function vRutas(){
         <td class="r num hide-m">${r.sin_ubicar ? `<span class="badge warn">${r.sin_ubicar}</span>` : '0'}</td>
         <td class="hide-m">${hace(r.ultima_carga)}</td>
         <td class="r"><button class="btn sm out" data-act="importar" data-id="${esc(r.codigo)}">${ico('upload')}<span class="hide-m">Cargar Excel</span></button></td></tr>`).join('')}
-      </tbody></table></div>` : `<div class="emptyb"><b>${R.rutas.length ? 'Ninguna ruta coincide' : 'Todavía no hay rutas'}</b>${R.rutas.length ? 'Prueba con otro código o zona.' : esAdmin() ? 'Crea la primera con «Nueva ruta».' : ''}</div>`}
+      </tbody></table></div>` : `<div class="emptyb"><b>${R.rutas.length ? 'Ninguna ruta coincide' : 'Todavía no hay rutas'}</b>${R.rutas.length ? 'Prueba con otro código o zona.' : 'Crea la primera con «Nueva ruta».'}</div>`}
     </div>
     <div class="card"><div class="card-h"><h2>Cómo tiene que ser el Excel</h2></div><div class="card-b" style="color:var(--ink-2);font-size:14px;line-height:1.55">
       Una fila de títulos y un cliente por fila. Columnas que entiende, en cualquier orden: <b>código</b>, <b>nombre</b>, <b>dirección</b>, <b>población</b>, <b>teléfono</b> y <b>día de visita</b> (lunes, martes… o 1 a 7).
@@ -819,27 +749,20 @@ function vRutas(){
 // ---------- DETALLE DE RUTA ----------
 function vRuta(tab){
   const ru = RUTA.ruta, cs = RUTA.clientes, act = cs.filter(c => c.activo);
-  const hoyD = R ? R.dia : ((new Date().getDay() + 6) % 7) + 1;
-  const hoy = act.filter(c => !c.dia_visita || c.dia_visita === hoyD), hechos = hoy.filter(c => c.hoy === 'done').length;
   const sinUb = act.filter(c => !Number.isFinite(c.lat)).length;
-  const tabs = [['clientes', 'Clientes', act.length], ['mapa', 'Mapa', ''], ['notas', 'Notas', RUTA.notas.length], ['cargas', 'Cargas de Excel', RUTA.cargas.length]];
+  const tabs = [['clientes', 'Clientes', act.length], ['mapa', 'Mapa', '']];
   let cuerpo = '';
   if (tab === 'clientes') cuerpo = tClientes();
   else if (tab === 'mapa') cuerpo = `<div class="amap" id="mapaRuta"><div class="legend">${[1,2,3,4,5].filter(d => act.some(c => c.dia_visita === d)).map(d => `<span><i class="dot" style="background:${COLOR_DIA[d]}"></i>${NOMBRE_DIA[d]}</span>`).join('')}${act.some(c => !c.dia_visita) ? `<span><i class="dot" style="background:${COLOR_DIA[0]}"></i>sin día</span>` : ''}</div></div>`;
-  else if (tab === 'notas') cuerpo = RUTA.notas.length ? `<div class="notes-l">${RUTA.notas.map(n => `<div class="nt"><div><b>${esc(n.cliente)}</b> · ${esc(n.texto)}<small>${esc(n.autor || 'Anónimo')} · ${hace(n.creada)}</small></div>
-      <button class="btn sm out" data-act="borrarnota" data-id="${n.id}">Borrar</button></div>`).join('')}</div>` : `<div class="emptyb"><b>Sin notas</b>Las notas que escriban los comerciales en sus clientes aparecerán aquí.</div>`;
-  else if (tab === 'cargas') cuerpo = RUTA.cargas.length ? `<div class="tw"><table class="t"><thead><tr><th>Fecha</th><th>Archivo</th><th>Quién</th><th class="r">Clientes</th><th class="r">Bajas</th></tr></thead><tbody>
-      ${RUTA.cargas.map(c => `<tr><td class="num">${new Intl.DateTimeFormat('es-ES', {dateStyle:'medium', timeStyle:'short'}).format(new Date(c.fecha))}</td><td>${esc(c.archivo || '—')}</td><td>${esc(c.usuario)}</td><td class="r num">${c.importados}</td><td class="r num">${c.bajas}</td></tr>`).join('')}
-      </tbody></table></div>` : `<div class="emptyb"><b>Sin cargas registradas</b>Cada vez que se cargue un Excel quedará apuntado aquí: cuándo, quién y con qué archivo.</div>`;
   return `<button class="crumb" data-go="#/rutas">${ico('chevron')}Rutas</button>
     <div class="ph"><div class="t" style="display:flex;gap:14px;align-items:center">
         <span class="codeb big">${esc(ru.codigo)}</span>
-        <div><h1>${esc(ru.nombre || 'Sin nombre')}</h1><p>${pl(act.length, 'cliente', 'clientes')} · hoy ${hechos} de ${hoy.length} visitados${sinUb ? ` · <span style="color:var(--warn);font-weight:650">${sinUb} sin ubicar</span>` : ''} · ${pl(ru.dispositivos, 'dispositivo conectado', 'dispositivos conectados')}</p></div></div>
+        <div><h1>${esc(ru.nombre || 'Sin nombre')}</h1><p>${pl(act.length, 'cliente', 'clientes')}${sinUb ? ` · <span style="color:var(--warn);font-weight:650">${sinUb} sin ubicar</span>` : ''}</p></div></div>
       <div class="acts">
         <button class="btn sm primary" data-act="importar" data-id="${esc(ru.codigo)}">${ico('upload')}Cargar Excel</button>
-        ${esAdmin() ? `<button class="btn sm out" data-act="editarruta" data-id="${esc(ru.codigo)}">${ico('key')}Acceso y datos</button>` : ''}
+        <button class="btn sm out" data-act="editarruta" data-id="${esc(ru.codigo)}">${ico('key')}Acceso y datos</button>
       </div></div>
-    ${ru.bloqueada ? `<div class="notice">${ico('lock')}<div><b>Ruta bloqueada</b> por 5 intentos fallidos de buzón. Se desbloquea sola en 15 minutos.${esAdmin() ? ` <button class="inline" data-act="desbloquear" data-id="${esc(ru.codigo)}">Desbloquear ahora</button>` : ''}</div></div>` : ''}
+    ${ru.bloqueada ? `<div class="notice">${ico('lock')}<div><b>Ruta bloqueada</b> por 5 intentos fallidos de buzón. Se desbloquea sola en 15 minutos. <button class="inline" data-act="desbloquear" data-id="${esc(ru.codigo)}">Desbloquear ahora</button></div></div>` : ''}
     <div class="card"><div class="tabsb" role="tablist">${tabs.map(([id, t, n]) => `<button role="tab" aria-selected="${tab === id}" data-go="#/ruta/${esc(ru.codigo)}/${id}">${t}${n !== '' ? `<span class="num">${n}</span>` : ''}</button>`).join('')}</div>
       ${cuerpo}</div>`;
 }
@@ -866,14 +789,12 @@ function tClientes(){
       <div class="seg" role="group" aria-label="Filtrar por día">${opciones.map(([v, t, n]) => `<button data-act="filtro" data-id="${v}" aria-pressed="${ui.dia === v}">${t}<span class="num">${n}</span></button>`).join('')}</div>
       ${RUTA.clientes.some(c => !c.activo) ? `<label class="chk"><input type="checkbox" id="chkBajas" ${ui.bajas ? 'checked' : ''}>Ver dados de baja</label>` : ''}
     </div>
-    ${lista.length ? `<div class="tw"><table class="t"><thead><tr><th class="hide-m">Código</th><th>Cliente</th><th>Día</th><th class="hide-m">Ubicación</th><th>Hoy</th><th class="r hide-m">Notas</th></tr></thead><tbody>
+    ${lista.length ? `<div class="tw"><table class="t"><thead><tr><th class="hide-m">Código</th><th>Cliente</th><th>Día</th><th class="hide-m">Ubicación</th></tr></thead><tbody>
     ${lista.map(c => `<tr class="click ${c.activo ? '' : 'off'}" data-act="cliente" data-id="${c.id}">
       <td class="hide-m num">${esc(c.codigo)}</td>
       <td><b>${esc(c.nombre)}</b>${c.activo ? '' : ' <span class="badge plain">De baja</span>'}<span class="sub">${esc(c.direccion)}${c.poblacion ? ', ' + esc(c.poblacion) : ''}</span></td>
       <td>${c.dia_visita ? `<i class="dot" style="background:${COLOR_DIA[c.dia_visita]}"></i>${NOMBRE_DIA[c.dia_visita]}` : '<span style="color:var(--ink-3)">—</span>'}</td>
-      <td class="hide-m">${ubicacion(c)}</td>
-      <td>${c.hoy === 'done' ? '<span class="badge ok">Hecho</span>' : c.hoy === 'skipped' ? '<span class="badge warn">Para luego</span>' : '<span style="color:var(--ink-3)">—</span>'}</td>
-      <td class="r num hide-m">${c.notas || ''}</td></tr>`).join('')}
+      <td class="hide-m">${ubicacion(c)}</td></tr>`).join('')}
     </tbody></table></div>` : `<div class="emptyb"><b>${act.length ? 'Ningún cliente coincide' : 'Esta ruta no tiene clientes'}</b>${act.length ? 'Cambia el filtro o la búsqueda.' : 'Cárgalos con «Cargar Excel».'}</div>`}`;
 }
 // Mapa de la ruta: un punto por cliente, del color de su día
@@ -891,26 +812,9 @@ function pintarMapaRuta(){
   if (pts.length) m.fitBounds(pts, {padding:[40, 40], maxZoom:17});
 }
 
-// ---------- USUARIOS ----------
-function vUsuarios(){
-  return `<div class="ph"><div class="t"><h1>Usuarios de oficina</h1><p>Quién puede entrar en este panel y qué puede hacer.</p></div>
-      <div class="acts"><button class="btn sm primary" data-act="nuevousuario">${ico('plus-sq')}Nuevo usuario</button></div></div>
-    <div class="card"><div class="tw"><table class="t"><thead><tr><th>Usuario</th><th>Rol</th><th>Estado</th><th class="hide-m">Último acceso</th></tr></thead><tbody>
-      ${USUARIOS.map(u => `<tr class="click" data-act="editarusuario" data-id="${esc(u.usuario)}">
-        <td><div style="display:flex;align-items:center;gap:10px"><span class="avatar">${esc((u.nombre || u.usuario).slice(0, 2))}</span><div><b>${esc(u.nombre || u.usuario)}</b>${u.usuario === YO.usuario ? ' <span class="badge plain">Tú</span>' : ''}<span class="sub">${esc(u.usuario)}</span></div></div></td>
-        <td>${u.rol === 'admin' ? '<span class="badge info plain">Administrador</span>' : '<span class="badge plain">Coordinador</span>'}</td>
-        <td>${!u.activo ? '<span class="badge plain">Desactivado</span>' : u.bloqueado ? '<span class="badge bad">Bloqueado</span>' : '<span class="badge ok">Activo</span>'}</td>
-        <td class="hide-m">${hace(u.ultimo_acceso)}</td></tr>`).join('')}
-    </tbody></table></div></div>
-    <div class="card"><div class="card-h"><h2>Qué puede hacer cada rol</h2></div><div class="card-b" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;font-size:14px;color:var(--ink-2);line-height:1.55">
-      <div><b style="color:var(--ink)">Administrador</b><br>Todo lo del coordinador, y además: crear y borrar rutas, cambiar buzones, desbloquear rutas, cerrar sesiones de dispositivos y gestionar usuarios.</div>
-      <div><b style="color:var(--ink)">Coordinador</b><br>Ver el resumen y el progreso del día, cargar el Excel de las rutas, editar clientes, corregir pines y gestionar notas.</div>
-    </div></div>`;
-}
-
 // ---------- MI CUENTA ----------
 function vCuenta(){
-  return `<div class="ph"><div class="t"><h1>Mi cuenta</h1><p>${esc(YO.nombre || YO.usuario)} · ${YO.rol === 'admin' ? 'Administrador' : 'Coordinador'} · usuario «${esc(YO.usuario)}»</p></div></div>
+  return `<div class="ph"><div class="t"><h1>Mi cuenta</h1><p>${esc(YO.nombre || YO.usuario)} · Administrador · usuario «${esc(YO.usuario)}»</p></div></div>
     <div class="card" style="max-width:520px"><div class="card-h"><h2>Cambiar contraseña</h2></div><div class="card-b">
       <form id="fClaveForm">
         <label class="field"><span>Contraseña actual</span><input class="input" type="password" name="actual" autocomplete="current-password" required></label>
@@ -949,7 +853,7 @@ function pintarHoja(){
       ${r ? `<div class="danger-zone">
         <div class="sh-sec" style="margin-top:0">Accesos</div>
         <div style="display:grid;gap:8px">
-          <button class="btn out" data-act="cerrarsesiones" data-id="${esc(r.codigo)}">${ico('logout')}Cerrar sesión en todos los dispositivos (${r.dispositivos})</button>
+          <button class="btn out" data-act="cerrarsesiones" data-id="${esc(r.codigo)}">${ico('logout')}Cerrar sesión en todos los dispositivos</button>
           ${r.bloqueada ? `<button class="btn out" data-act="desbloquear" data-id="${esc(r.codigo)}">${ico('lock')}Desbloquear la ruta</button>` : ''}
           <button class="btn out danger" data-act="borrarruta" data-id="${esc(r.codigo)}">${ico('trash')}Borrar la ruta y todos sus clientes</button>
         </div></div>` : ''}`;
@@ -1011,23 +915,6 @@ function pintarHoja(){
     if (d){ d.addEventListener('dragover', e => { e.preventDefault(); d.style.borderColor = 'var(--accent)'; });
             d.addEventListener('drop', e => { e.preventDefault(); leerYUbicar(e.dataTransfer.files[0]); }); }
     return;
-  }
-  if (h.tipo === 'usuario'){
-    const u = h.id && USUARIOS ? USUARIOS.find(x => x.usuario === h.id) : null, yo = u && u.usuario === YO.usuario;
-    b.innerHTML = cabeza(u ? esc(u.nombre || u.usuario) : 'Nuevo usuario', u ? `Usuario «${esc(u.usuario)}»` : 'Entrará en este panel con su usuario y su contraseña.') + `
-      <form id="fUsuarioForm" style="margin-top:18px">
-        <div class="rolecards" role="radiogroup" aria-label="Rol">
-          <label><input type="radio" name="rol" value="coordinador" ${!u || u.rol === 'coordinador' ? 'checked' : ''} ${yo ? 'disabled' : ''}><b>Coordinador</b>Día a día: Excel, clientes, pines y notas.</label>
-          <label><input type="radio" name="rol" value="admin" ${u && u.rol === 'admin' ? 'checked' : ''}><b>Administrador</b>Todo, incluidos usuarios y buzones.</label>
-        </div>
-        <div class="form-grid" style="margin-top:0">
-          <label class="field"><span>Usuario</span><input class="input" name="usuario" value="${esc(u ? u.usuario : '')}" ${u ? 'readonly' : ''} placeholder="miren" autocapitalize="none" autocomplete="off" required></label>
-          <label class="field"><span>Nombre</span><input class="input" name="nombre" value="${esc(u ? u.nombre : '')}" placeholder="Miren"></label>
-          <label class="field full"><span>${u ? 'Contraseña nueva' : 'Contraseña'}</span><input class="input" name="clave" type="text" autocomplete="off" placeholder="${u ? 'Déjala vacía para no cambiarla' : 'Mínimo 4 caracteres'}"></label>
-          ${u && !yo ? `<label class="field full"><span>Estado</span><select class="input" name="activo"><option value="true" ${u.activo ? 'selected' : ''}>Activo</option><option value="false" ${u.activo ? '' : 'selected'}>Desactivado (no puede entrar)</option></select></label>` : ''}
-        </div>
-        <button class="btn primary" type="submit" style="width:100%">${u ? 'Guardar cambios' : 'Crear usuario'}</button></form>
-      ${u && !yo ? `<div class="danger-zone"><button class="btn out danger" style="width:100%" data-act="borrarusuario" data-id="${esc(u.usuario)}">${ico('trash')}Borrar este usuario</button></div>` : ''}`;
   }
 }
 // Mapa pequeño de la ficha del cliente: el pin se arrastra o se toca el mapa; se guarda con "Guardar cambios"
@@ -1092,22 +979,15 @@ document.addEventListener('click', async e => {
   if (act === 'otro'){ ui.imp = {pob: ui.imp && ui.imp.pob}; return pintarHoja(); }
   if (act === 'cliente') return abrirHoja('cliente', id);
   if (act === 'filtro'){ ui.dia = id; $('#page').innerHTML = vRuta('clientes'); return; }
-  if (act === 'nuevousuario') return abrirHoja('usuario', null);
-  if (act === 'editarusuario') return abrirHoja('usuario', id);
   if (act === 'desbloquear') return accion('oficina_desbloquear', {p_codigo: id}, `Ruta ${id} desbloqueada`).then(ok => ok && cerrarHoja(true));
   if (act === 'cerrarsesiones'){
     if (!confirm(`Todos los dispositivos que tengan abierta la ruta ${id} tendrán que volver a entrar con el buzón. ¿Seguir?`)) return;
     return accion('oficina_cerrar_sesiones', {p_codigo: id}, n => `${pl(n, 'sesión cerrada', 'sesiones cerradas')} en ${id}`).then(ok => ok && cerrarHoja(true));
   }
   if (act === 'borrarruta'){
-    const t = prompt(`Se borrará la ruta ${id} con todos sus clientes, notas y visitas. No se puede deshacer.\n\nEscribe ${id} para confirmar:`);
+    const t = prompt(`Se borrará la ruta ${id} con todos sus clientes y notas. No se puede deshacer.\n\nEscribe ${id} para confirmar:`);
     if ((t || '').trim().toUpperCase() !== id) return;
     cerrarHoja(true); return accion('oficina_borrar_ruta', {p_codigo: id}, `Ruta ${id} borrada`).then(() => ir('#/rutas'));
-  }
-  if (act === 'borrarnota'){ if (!confirm('¿Borrar esta nota para todos?')) return; return accion('oficina_borrar_nota', {p_nota: id}, 'Nota borrada'); }
-  if (act === 'borrarusuario'){
-    if (!confirm(`¿Borrar el usuario «${id}»? Dejará de poder entrar.`)) return;
-    cerrarHoja(true); USUARIOS = null; return accion('oficina_borrar_usuario', {p_usuario: id}, 'Usuario borrado');
   }
   if (act === 'regeo'){
     const f = $('#fClienteForm'); const c = {direccion: f.direccion.value, poblacion: f.poblacion.value};
@@ -1128,7 +1008,6 @@ document.addEventListener('submit', async e => {
     if (f.id === 'loginForm'){
       const lbl = boton.querySelector('span'); lbl.textContent = 'Entrando…'; $('#loginError').textContent = '';
       try { await entrar(f.usuario.value, f.clave.value); f.clave.value = ''; $('#login').hidden = true; $('#app').hidden = false;
-            if (esAdmin()) rpc('oficina_usuarios', {p_token: TOKEN}).then(u => { USUARIOS = u; pintarNav(); }).catch(() => {});
             pintar(); }
       catch (err){ $('#loginError').textContent = {DATOS_INCORRECTOS:'Usuario o contraseña incorrectos.', BLOQUEADO:'Demasiados intentos. Espera 15 minutos.', SIN_CONEXION:'No hay conexión.'}[err.message] || err.message; }
       lbl.textContent = 'Entrar';
@@ -1145,13 +1024,6 @@ document.addEventListener('submit', async e => {
       try { await rpc('oficina_guardar_cliente', {p_token: TOKEN, p_id: f.dataset.id, p_datos: d}); toast('Cliente guardado'); cerrarHoja(true); RUTA = null; pintar(); }
       catch (err){ tratarError(err); }
     }
-    if (f.id === 'fUsuarioForm'){
-      const u = f.usuario.value.trim().toLowerCase(), rol = (f.querySelector('[name=rol]:checked') || {}).value || 'admin';
-      const activo = f.activo ? f.activo.value === 'true' : true;
-      try { await rpc('oficina_guardar_usuario', {p_token: TOKEN, p_usuario: u, p_nombre: f.nombre.value, p_rol: rol, p_clave: f.clave.value, p_activo: activo});
-            toast('Usuario guardado'); cerrarHoja(true); USUARIOS = null; pintar(); }
-      catch (err){ tratarError(err); }
-    }
     if (f.id === 'fClaveForm'){
       try { await rpc('oficina_cambiar_mi_clave', {p_token: TOKEN, p_actual: f.actual.value, p_nueva: f.nueva.value}); f.reset(); toast('Contraseña cambiada'); }
       catch (err){ tratarError(err); }
@@ -1164,14 +1036,11 @@ $('#btnEye').addEventListener('click', e => {
   const f = $('#fClave'), ver = f.type === 'password'; f.type = ver ? 'text' : 'password';
   e.currentTarget.setAttribute('aria-pressed', ver); e.currentTarget.querySelector('use').setAttribute('href', ver ? '#i-eye-off' : '#i-eye');
 });
-// El resumen se refresca solo cada minuto mientras está a la vista
-setInterval(() => { if (TOKEN && !document.hidden && ruta().vista === 'resumen' && !ui.hoja) pintar(); }, 60000);
 
 // ---------- Arranque ----------
 if (TOKEN && YO){
   $('#login').hidden = true; $('#app').hidden = false;
-  rpc('oficina_yo', {p_token: TOKEN}).then(y => { YO = y; store.set('gnv.oficina.yo', y); pintarNav();
-    if (esAdmin()) rpc('oficina_usuarios', {p_token: TOKEN}).then(u => { USUARIOS = u; pintarNav(); }).catch(() => {}); }).catch(tratarError);
+  rpc('oficina_yo', {p_token: TOKEN}).then(y => { YO = y; store.set('gnv.oficina.yo', y); pintarNav(); }).catch(tratarError);
   pintar();
 } else salir();
 </script>
