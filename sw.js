@@ -4,7 +4,7 @@
      y si no hay cobertura se usa la guardada.
    - Los trozos del mapa se guardan al verlos, para no descargarlos dos veces.
    - Supabase, direcciones y rutas andando siempre van a internet (son datos vivos). */
-const VERSION = 'v7';
+const VERSION = 'v8';
 const APP = 'gnv-app-' + VERSION, MAPA = 'gnv-mapa-v1';
 const BASE = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './fonts/geist.woff2'];
 const LIBS = ['https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css',

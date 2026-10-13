@@ -802,6 +802,35 @@ html{background:#B4BDF9}
 @media (hover:hover){.firma a:hover{color:var(--accent-ink);background:rgba(255,255,255,.55)}}
 @media (min-width:880px){.firma{position:absolute;left:0;right:0;bottom:16px;margin:0;padding:0}}
 
+/* ============================================================
+   14. REVISIÓN GUIADA DE UBICACIONES
+   ============================================================ */
+.rev{display:grid;grid-template-columns:minmax(260px,330px) minmax(0,1fr)}
+.rev-lista{border-right:1px solid rgba(255,255,255,.8);display:flex;flex-direction:column;min-height:0;max-height:680px}
+.rev-prog{padding:14px 16px 10px;font-size:14px;color:var(--ink-2)}
+.rev-prog b{font-size:22px;color:var(--ink);letter-spacing:-.02em}
+.rev-prog .bar{height:6px;border-radius:3px;background:rgba(255,255,255,.8);overflow:hidden;margin-top:8px}
+.rev-prog .bar i{display:block;height:100%;background:var(--ok-2);border-radius:3px;transform-origin:left;transition:transform .5s var(--muelle)}
+.rev-items{overflow:auto;padding:0 8px 12px;display:flex;flex-direction:column;gap:2px}
+.rev-item{display:flex;gap:10px;align-items:center;text-align:left;border:0;background:none;border-radius:14px;padding:10px;cursor:pointer;font:inherit;color:inherit;transition:background-color .2s ease,opacity .3s ease}
+.rev-item:hover{background:rgba(255,255,255,.55)}
+.rev-item.sel{background:#fff;box-shadow:0 4px 14px rgba(30,40,90,.12)}
+.rev-item.ok{opacity:.5}
+.rev-item .ico{color:var(--ok-2);width:18px;height:18px;flex:none}
+.rev-item .ri-t{flex:1;min-width:0;display:flex;flex-direction:column}
+.rev-item .ri-t b{font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rev-item .ri-t span{font-size:12.5px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rev-main{padding:14px 16px 16px;min-width:0;display:flex;flex-direction:column;gap:10px}
+.rev-cab{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+.rev-dir{display:block;font-size:17px;font-weight:650;letter-spacing:-.01em}
+.rev-sub{display:block;font-size:13.5px;color:var(--ink-2);margin-top:2px}
+.rev-buscar{display:flex;gap:8px;align-items:center}
+.rev-buscar .search{flex:1;min-width:0}
+.rev-mapa{height:460px;border-radius:18px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.8)}
+.rev-acc{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.rev-acc .hint{flex:1;min-width:200px;margin:0}
+@media (max-width:899px){.rev{grid-template-columns:1fr}.rev-lista{max-height:210px;border-right:0;border-bottom:1px solid rgba(255,255,255,.8)}.rev-mapa{height:360px}}
+
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -1106,6 +1135,9 @@ function mapearColumnas(filas){
 // Un mismo cliente puede visitarse dos días distintos (sale dos veces en el archivo con el mismo número).
 // Se cargan como dos visitas: «1234·1» y «1234·4». Si además coincide el día, se queda una sola.
 function sanearFilas(filas){
+  // Sábado y domingo no se trabajan: esas filas se ignoran (y se avisa de cuántas son)
+  const finde = filas.filter(f => f.dia_visita >= 6).length;
+  filas = filas.filter(f => !(f.dia_visita >= 6));
   const veces = {}; filas.forEach(f => { if (f.codigo) veces[f.codigo] = (veces[f.codigo] || 0) + 1; });
   const vistos = new Set(), salida = []; let repetidos = 0;
   for (const f of filas){
@@ -1113,7 +1145,7 @@ function sanearFilas(filas){
     if (f.codigo){ if (vistos.has(f.codigo)){ repetidos++; continue; } vistos.add(f.codigo); }
     salida.push(f);
   }
-  salida.avisos = {repetidos, dobles: new Set(salida.filter(f => f.codigoOriginal).map(f => f.codigoOriginal)).size};
+  salida.avisos = {repetidos, finde, dobles: new Set(salida.filter(f => f.codigoOriginal).map(f => f.codigoOriginal)).size};
   return salida;
 }
 
@@ -1157,12 +1189,13 @@ async function pintar(){
   try {
     if (r.vista === 'rutas'){ if (!R) page.innerHTML = esqueleto('Rutas'); R = await rpc('oficina_resumen', {p_token: TOKEN}); pintarNav(); page.innerHTML = vRutas(); }
     else if (r.vista === 'ruta'){
-      if (r.tab !== 'clientes' && r.tab !== 'mapa') return ir(`#/ruta/${encodeURIComponent(r.codigo)}/clientes`);
+      if (!['clientes', 'mapa', 'revisar'].includes(r.tab)) return ir(`#/ruta/${encodeURIComponent(r.codigo)}/clientes`);
       if (ui.rutaCod !== r.codigo){ ui.q = ''; ui.dia = ui.filtroSig || 'todos'; ui.frec = 'todas'; ui.bajas = false; ui.rutaCod = r.codigo; }
       ui.filtroSig = null;
       if (!RUTA || RUTA.ruta.codigo !== r.codigo) page.innerHTML = esqueleto('Ruta ' + esc(r.codigo));
       RUTA = await rpc('oficina_ruta', {p_token: TOKEN, p_codigo: r.codigo}); page.innerHTML = vRuta(r.tab);
       if (r.tab === 'mapa') pintarMapaRuta();
+      if (r.tab === 'revisar') iniciarRevision();
     }
     else if (r.vista === 'cuenta') page.innerHTML = vCuenta();
     else return ir('#/rutas');
@@ -1197,20 +1230,23 @@ function vRutas(){
 function vRuta(tab){
   const ru = RUTA.ruta, cs = RUTA.clientes, act = cs.filter(c => c.activo);
   const sinUb = act.filter(c => !Number.isFinite(c.lat)).length;
-  const tabs = [['clientes', 'Clientes', act.length], ['mapa', 'Mapa', '']];
+  const dud = act.filter(esDudoso).length;
+  const tabs = [['clientes', 'Clientes', act.length], ['mapa', 'Mapa', ''], ...((dud || tab === 'revisar') ? [['revisar', 'Revisar ubicaciones', dud]] : [])];
   let cuerpo = '';
   if (tab === 'clientes') cuerpo = tClientes();
+  else if (tab === 'revisar') cuerpo = '<div id="revisar"></div>';
   else if (tab === 'mapa') cuerpo = `<div class="amap" id="mapaRuta"><div class="legend">${[1,2,3,4,5].filter(d => act.some(c => c.dia_visita === d)).map(d => `<span><i class="dot" style="background:${COLOR_DIA[d]}"></i>${NOMBRE_DIA[d]}</span>`).join('')}${act.some(c => !c.dia_visita) ? `<span><i class="dot" style="background:${COLOR_DIA[0]}"></i>sin día</span>` : ''}</div></div>`;
   return `<button class="crumb" data-go="#/rutas">${ico('chevron')}Rutas</button>
     <div class="ph"><div class="t" style="display:flex;gap:14px;align-items:center">
         <span class="codeb big">${esc(ru.codigo)}</span>
         <div><h1>${esc(ru.nombre || 'Sin nombre')}</h1><p>${pl(act.length, 'cliente', 'clientes')}${sinUb ? ` · <span style="color:var(--warn);font-weight:650">${sinUb} sin ubicar</span>` : ''}</p></div></div>
       <div class="acts">
+        ${dud ? `<button class="btn sm subir" data-go="#/ruta/${esc(ru.codigo)}/revisar">${ico('pin')}Revisar ubicaciones <span class="n-rev-h">${dud}</span></button>` : ''}
         <button class="btn sm primary" data-act="importar" data-id="${esc(ru.codigo)}">${ico('upload')}Cargar Excel</button>
         <button class="btn sm out" data-act="editarruta" data-id="${esc(ru.codigo)}">${ico('key')}Acceso y datos</button>
       </div></div>
     ${ru.bloqueada ? `<div class="notice">${ico('lock')}<div><b>Ruta bloqueada</b> por 5 intentos fallidos de buzón. Se desbloquea sola en 15 minutos. <button class="inline" data-act="desbloquear" data-id="${esc(ru.codigo)}">Desbloquear ahora</button></div></div>` : ''}
-    <div class="card"><div class="tabsb" role="tablist">${tabs.map(([id, t, n]) => `<button role="tab" aria-selected="${tab === id}" data-go="#/ruta/${esc(ru.codigo)}/${id}">${t}${n !== '' ? `<span class="num">${n}</span>` : ''}</button>`).join('')}</div>
+    <div class="card"><div class="tabsb" role="tablist">${tabs.map(([id, t, n]) => `<button role="tab" aria-selected="${tab === id}" data-go="#/ruta/${esc(ru.codigo)}/${id}">${t}${n !== '' ? `<span class="num${id === 'revisar' ? ' n-rev' : ''}">${n}</span>` : ''}</button>`).join('')}</div>
       ${cuerpo}</div>`;
 }
 function filtrarClientes(){
@@ -1291,6 +1327,15 @@ const cabeza = (t, sub) => `<div class="sh-head"><div style="flex:1;min-width:0"
   <button class="btn icon" data-act="close" aria-label="Cerrar">${ico('x')}</button></div>`;
 function pintarHoja(){
   const h = ui.hoja, b = $('#sheetBody'); if (!h) return;
+  if (h.tipo === 'misma'){
+    const n = h.ids.length;
+    b.innerHTML = cabeza('Misma dirección', 'Pin guardado.') + `
+      <p style="margin:6px 0 12px;font-size:15.5px;line-height:1.5">${n === 1 ? 'Hay otro cliente' : `Hay otros ${n} clientes`} en esta misma dirección sin una ubicación fiable:</p>
+      <ul class="preview">${h.ids.map(x => `<li><b>${esc(x.nombre)}</b></li>`).join('')}</ul>
+      <button class="btn primary" style="width:100%;margin-top:16px" data-act="aplicarmisma">${ico('pin')}Poner el mismo pin ${n === 1 ? 'a ese cliente' : `a esos ${n}`}</button>
+      <button class="btn out" style="width:100%;margin-top:8px" data-act="close">No, solo a este</button>`;
+    return;
+  }
   if (h.tipo === 'ruta'){
     const r = h.id && R ? R.rutas.find(x => x.codigo === h.id) : null;
     b.innerHTML = cabeza(r ? `Ruta ${esc(r.codigo)}` : 'Nueva ruta', r ? 'Acceso y datos de la ruta.' : 'El comercial entrará con este código y este buzón.') + `
@@ -1362,12 +1407,11 @@ function pintarHoja(){
       const porFrec = FRECUENCIAS.map(n => [n, im.filas.filter(f => f.frecuencia === n).length]).filter(x => x[1]);
       const frecMal = im.filas.filter(f => f.frecuencia === 0).length;
       const av = im.avisos || {}, rutasArchivo = rutasDelArchivo(im), distinta = rutaDistinta(im, h.id);
-      const finde = im.filas.filter(f => f.dia_visita >= 6).length;
       const aviso = (icono, t) => `<div class="notice" style="margin:0 0 8px">${ico(icono)}<div>${t}</div></div>`;
       const avisosTxt = (distinta ? aviso('alert', `<b>Este archivo es de la ruta ${esc(rutasArchivo.join(', '))}</b> y lo vas a subir a la ruta <b>${esc(h.id)}</b>. Si te has equivocado, pulsa «Elegir otro archivo».`) : '')
         + (av.dobles ? aviso('calendar', `${pl(av.dobles, 'cliente se visita', 'clientes se visitan')} dos días distintos. Se cargan como dos visitas, por ejemplo «1234·1» y «1234·4».`) : '')
         + (av.repetidos ? aviso('alert', `${pl(av.repetidos, 'fila repetida', 'filas repetidas')} (mismo cliente y mismo día): se ha dejado una sola.`) : '')
-        + (finde ? aviso('calendar', `${pl(finde, 'cliente tiene', 'clientes tienen')} visita en sábado o domingo. Si es un error del archivo, corrígelo después en su ficha.`) : '');
+        + (av.finde ? aviso('calendar', `${pl(av.finde, 'fila con visita en sábado o domingo no se carga', 'filas con visita en sábado o domingo no se cargan')}.`) : '');
       const frecTxt = im.filas.every(f => f.frecuencia === null)
         ? `<p class="hint" style="margin:0 0 8px">El archivo no trae frecuencia de visita: los clientes nuevos serán semanales y los que ya estaban mantienen la suya.</p>`
         : `<p class="hint" style="margin:0 0 8px">Por frecuencia: ${porFrec.map(([n, k]) => `${NOMBRE_FREC[n].toLowerCase()} ${k}`).join(' · ')}</p>`
@@ -1426,6 +1470,122 @@ function miniMapa(){
 }
 const avisoPin = () => { const t = $('#pinTxt'); if (t) t.innerHTML = '<b style="color:var(--accent-ink)">Pin movido.</b> Pulsa «Guardar cambios» para aplicarlo.'; };
 
+// ---------- Ubicaciones dudosas: revisión guiada ----------
+// Dudoso = sin ubicar o con pin «aproximado». Se agrupan por dirección: un solo toque en el mapa vale para
+// todos los clientes que comparten portal (o centro comercial).
+const esDudoso = c => c.activo && (!Number.isFinite(c.lat) || c.geo === 'aprox');
+function gruposDudosos(){
+  const mapa = new Map();
+  RUTA.clientes.filter(esDudoso).forEach(c => {
+    const k = addrKey(c);
+    if (!mapa.has(k)) mapa.set(k, {key:k, direccion:c.direccion, poblacion:c.poblacion, clientes:[]});
+    mapa.get(k).clientes.push(c);
+  });
+  const sin = g => g.clientes.some(c => !Number.isFinite(c.lat)) ? 0 : 1;
+  return [...mapa.values()].sort((a, b) => sin(a) - sin(b) || b.clientes.length - a.clientes.length);
+}
+function iniciarRevision(){
+  const grupos = gruposDudosos();
+  ui.rev = {grupos, actual: grupos[0] && grupos[0].key, hechos: new Set(), tmp: null, movido: false};
+  pintarRevision();
+}
+function pintarRevision(){
+  const rv = ui.rev, cont = $('#revisar'); if (!rv || !cont) return;
+  const cod = RUTA.ruta.codigo, pend = rv.grupos.filter(g => !rv.hechos.has(g.key));
+  if (!pend.length){
+    const n = rv.grupos.reduce((a, g) => a + g.clientes.length, 0);
+    cont.innerHTML = `<div class="emptyb"><b>${rv.grupos.length ? '¡Todas las ubicaciones revisadas!' : 'No hay ubicaciones que revisar'}</b>
+      ${rv.grupos.length ? `Has colocado ${pl(rv.grupos.length, 'dirección', 'direcciones')} (${pl(n, 'cliente', 'clientes')}).` : 'Todos los clientes tienen una ubicación fiable.'}
+      <div style="margin-top:14px"><button class="btn primary sm" data-go="#/ruta/${esc(cod)}/clientes">Ver los clientes</button></div></div>`;
+    if (ui.mapaRev){ ui.mapaRev.remove(); ui.mapaRev = null; }
+    return;
+  }
+  if (!pend.some(g => g.key === rv.actual)) rv.actual = pend[0].key;
+  const g = rv.grupos.find(x => x.key === rv.actual), hechos = rv.hechos.size, total = rv.grupos.length;
+  const sinUb = g.clientes.some(c => !Number.isFinite(c.lat));
+  const scroll = (cont.querySelector('.rev-items') || {}).scrollTop || 0;
+  cont.innerHTML = `<div class="rev">
+    <div class="rev-lista">
+      <div class="rev-prog"><b class="num">${hechos}</b> de ${total} direcciones revisadas<div class="bar"><i style="transform:scaleX(${total ? hechos / total : 0})"></i></div></div>
+      <div class="rev-items">${rv.grupos.map(x => `<button class="rev-item${x.key === rv.actual ? ' sel' : ''}${rv.hechos.has(x.key) ? ' ok' : ''}" data-act="revir" data-id="${esc(x.key)}">
+        <span class="ri-t"><b>${esc(x.direccion || 'Sin dirección')}</b><span>${x.clientes.map(c => esc(c.nombre)).join(' · ')}</span></span>
+        ${rv.hechos.has(x.key) ? ico('check') : x.clientes.length > 1 ? `<span class="badge plain num">${x.clientes.length}</span>` : ''}</button>`).join('')}</div>
+    </div>
+    <div class="rev-main">
+      <div class="rev-cab"><div style="min-width:0"><span class="rev-dir">${esc(g.direccion || 'Sin dirección')}${g.poblacion ? ', ' + esc(g.poblacion) : ''}</span>
+        <span class="rev-sub">${pl(g.clientes.length, 'cliente', 'clientes')}: ${g.clientes.map(c => esc(c.nombre)).join(' · ')}</span></div>
+        <span class="badge warn">${sinUb ? 'Sin ubicar' : 'Aproximada'}</span></div>
+      <form class="rev-buscar" id="fRevBuscar"><label class="search">${ico('search')}<input class="input" name="q" placeholder="Buscar un sitio: centro comercial, calle…" autocomplete="off"></label>
+        <button class="btn sm out" type="submit">Buscar</button></form>
+      <div class="amap rev-mapa" id="mapaRev">${window.L ? '' : '<div class="emptyb" style="padding:90px 12px">El mapa no está disponible sin conexión.</div>'}</div>
+      <div class="rev-acc"><span class="hint" id="revTxt"></span>
+        <button class="btn sm out" data-act="revsaltar">${ico('skip')}Saltar</button>
+        <button class="btn sm primary" id="btnRevG" data-act="revguardar" disabled>${ico('check')}<span id="lblRevG">Guardar y siguiente</span></button></div>
+    </div></div>`;
+  const it = cont.querySelector('.rev-items'); if (it){ it.scrollTop = scroll; const sel = it.querySelector('.sel'); if (sel && (sel.offsetTop < it.scrollTop || sel.offsetTop > it.scrollTop + it.clientHeight - 60)) it.scrollTop = Math.max(0, sel.offsetTop - 80); }
+  mapaRevision(g);
+}
+function estadoRevision(){
+  const rv = ui.rev, b = $('#btnRevG'); if (!rv || !b) return;
+  const g = rv.grupos.find(x => x.key === rv.actual), previo = g && g.clientes.some(c => Number.isFinite(c.lat));
+  b.disabled = !rv.tmp;
+  $('#lblRevG').textContent = previo && !rv.movido ? 'Confirmar y siguiente' : 'Guardar y siguiente';
+  $('#revTxt').textContent = !rv.tmp ? 'Toca en el mapa el sitio exacto. Los puntos azules son clientes de esa misma calle.'
+    : previo && !rv.movido ? 'Ubicación aproximada: arrastra el pin si no está bien, o confírmala.' : 'Pin colocado. Puedes arrastrarlo para afinar.';
+}
+function mapaRevision(g){
+  const el = $('#mapaRev'), rv = ui.rev; if (!el || !window.L) return;
+  if (ui.mapaRev){ ui.mapaRev.remove(); ui.mapaRev = null; }
+  const m = ui.mapaRev = L.map(el).setView([43.2965, -2.989], 15);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(m);
+  const calle = c => norm(String(c.direccion || '').split(',')[0]), kCalle = calle(g);
+  const vecinos = RUTA.clientes.filter(c => c.activo && Number.isFinite(c.lat) && c.geo !== 'aprox' && !g.clientes.includes(c));
+  const igual = vecinos.filter(c => kCalle && calle(c) === kCalle);
+  vecinos.forEach(c => { const mc = igual.includes(c);
+    L.circleMarker([c.lat, c.lng], {radius: mc ? 6 : 4, color: mc ? '#3046C9' : '#7B8499', weight: 1, fillColor: mc ? '#3B55E6' : '#A8B0C2', fillOpacity: .8})
+      .addTo(m).bindTooltip(`<b>${esc(c.nombre)}</b><br>${esc(c.direccion)}`); });
+  let mk = null;
+  const poner = p => {
+    if (!mk){ mk = L.marker([p.lat, p.lng], {draggable:true}).addTo(m); mk.on('dragend', e => { const q = e.target.getLatLng(); rv.tmp = {lat:q.lat, lng:q.lng}; rv.movido = true; estadoRevision(); }); }
+    else mk.setLatLng([p.lat, p.lng]);
+  };
+  const previo = g.clientes.find(c => Number.isFinite(c.lat));
+  rv.tmp = previo ? {lat:previo.lat, lng:previo.lng} : null; rv.movido = false;
+  if (rv.tmp) poner(rv.tmp);
+  m.on('click', e => { rv.tmp = {lat:e.latlng.lat, lng:e.latlng.lng}; rv.movido = true; poner(rv.tmp); estadoRevision(); });
+  ui.ponerRev = p => { rv.tmp = {lat:p.lat, lng:p.lng}; rv.movido = true; poner(rv.tmp); m.setView([p.lat, p.lng], 17); estadoRevision(); };
+  const pts = (igual.length ? igual : vecinos).map(c => [c.lat, c.lng]);
+  if (previo) m.setView([previo.lat, previo.lng], 17); else if (pts.length) m.fitBounds(pts, {padding:[50, 50], maxZoom:17});
+  setTimeout(() => m.invalidateSize(), 80);
+  estadoRevision();
+}
+function irARevision(key){ ui.rev.actual = key; ui.rev.tmp = null; pintarRevision(); }
+function siguienteRevision(){
+  const rv = ui.rev, i = rv.grupos.findIndex(g => g.key === rv.actual);
+  const sig = rv.grupos.slice(i + 1).concat(rv.grupos.slice(0, i)).find(g => !rv.hechos.has(g.key));
+  if (sig) irARevision(sig.key); else pintarRevision();
+}
+async function guardarRevision(){
+  const rv = ui.rev, g = rv && rv.grupos.find(x => x.key === rv.actual), b = $('#btnRevG'); if (!g || !rv.tmp || (b && b.disabled)) return;
+  if (b) b.disabled = true;
+  const p = rv.tmp;
+  try {
+    for (const c of g.clientes) await rpc('oficina_guardar_cliente', {p_token: TOKEN, p_id: c.id, p_datos: {lat: String(p.lat), lng: String(p.lng), geo: 'manual'}});
+    g.clientes.forEach(c => { c.lat = p.lat; c.lng = p.lng; c.geo = 'manual'; });
+    rv.hechos.add(g.key); R = null;
+    const n = RUTA.clientes.filter(esDudoso).length;
+    document.querySelectorAll('.n-rev, .n-rev-h').forEach(x => { x.textContent = n; });
+    siguienteRevision();
+  } catch (e){ if (b) b.disabled = false; tratarError(e); }
+}
+async function buscarLibre(q){
+  try {
+    const r = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=es&accept-language=es&q=' + encodeURIComponent(q + ', Bizkaia, España'));
+    const j = r.ok ? await r.json() : [];
+    return j[0] ? {lat:+j[0].lat, lng:+j[0].lon} : null;
+  } catch { return null; }
+}
+
 // ---------- Importar ----------
 async function leerYUbicar(file){
   if (!file) return;
@@ -1471,6 +1631,17 @@ document.addEventListener('click', async e => {
   if (act === 'importar'){ ui.imp = null; if (!R) R = await rpc('oficina_resumen', {p_token: TOKEN}).catch(() => R); return abrirHoja('importar', id); }
   if (act === 'subir') return subir();
   if (act === 'otro'){ ui.imp = {pob: ui.imp && ui.imp.pob}; return pintarHoja(); }
+  if (act === 'revir') return irARevision(id);
+  if (act === 'revguardar') return guardarRevision();
+  if (act === 'revsaltar'){ const rv = ui.rev; if (rv.grupos.filter(g => !rv.hechos.has(g.key)).length < 2) return toast('Es la última que queda.'); return siguienteRevision(); }
+  if (act === 'aplicarmisma'){
+    const h = ui.hoja; el.disabled = true;
+    try {
+      for (const x of h.ids) await rpc('oficina_guardar_cliente', {p_token: TOKEN, p_id: x.id, p_datos: {lat: String(h.pin.lat), lng: String(h.pin.lng), geo: 'manual'}});
+      toast(`Ubicación aplicada a ${pl(h.ids.length, 'cliente', 'clientes')}`); cerrarHoja(true); R = null; RUTA = null; pintar();
+    } catch (err){ el.disabled = false; tratarError(err); }
+    return;
+  }
   if (act === 'cliente') return abrirHoja('cliente', id);
   if (act === 'filtro'){ ui.dia = id; $('#page').innerHTML = vRuta('clientes'); return; }
   if (act === 'filtrofrec'){ ui.frec = id; $('#page').innerHTML = vRuta('clientes'); return; }
@@ -1516,14 +1687,33 @@ document.addEventListener('submit', async e => {
                  dia_visita: f.dia_visita.value, frecuencia: f.frecuencia.value, activo: f.activo.value === 'true'};
       const c = RUTA.clientes.find(x => x.id === f.dataset.id);
       if (ui.pinTmp && (ui.pinTmp.lat !== c.lat || ui.pinTmp.lng !== c.lng)) Object.assign(d, {lat: String(ui.pinTmp.lat), lng: String(ui.pinTmp.lng), geo: ui.pinTmp.geo || 'manual'});
-      try { await rpc('oficina_guardar_cliente', {p_token: TOKEN, p_id: f.dataset.id, p_datos: d}); toast('Cliente guardado'); cerrarHoja(true); RUTA = null; pintar(); }
+      const clave = addrKey({direccion: d.direccion, poblacion: d.poblacion});
+      const otros = d.lat !== undefined ? RUTA.clientes.filter(x => x.id !== c.id && addrKey(x) === clave && esDudoso(x)) : [];
+      try {
+        await rpc('oficina_guardar_cliente', {p_token: TOKEN, p_id: f.dataset.id, p_datos: d}); toast('Cliente guardado');
+        if (otros.length){   // otros clientes en la misma dirección sin ubicación fiable: se ofrece ponerles el mismo pin
+          if (ui.minimapa){ ui.minimapa.remove(); ui.minimapa = null; }
+          ui.hoja = {tipo:'misma', id:c.id, pin:{lat:+d.lat, lng:+d.lng}, ids: otros.map(x => ({id:x.id, nombre:x.nombre}))}; pintarHoja();
+        } else cerrarHoja(true);
+        RUTA = null; pintar();
+      }
       catch (err){ tratarError(err); }
+    }
+    if (f.id === 'fRevBuscar'){
+      const q = f.q.value.trim(); if (!q) return;
+      const r = await buscarLibre(q);
+      if (r && ui.ponerRev) ui.ponerRev(r); else toast('No encuentro ese sitio. Prueba con otras palabras.');
     }
     if (f.id === 'fClaveForm'){
       try { await rpc('oficina_cambiar_mi_clave', {p_token: TOKEN, p_actual: f.actual.value, p_nueva: f.nueva.value}); f.reset(); toast('Contraseña cambiada'); }
       catch (err){ tratarError(err); }
     }
   } finally { if (boton) boton.disabled = false; }
+});
+document.addEventListener('keydown', e => {   // en la revisión: Intro guarda y → salta (si no se está escribiendo)
+  if (!ui.rev || !$('#mapaRev') || ui.hoja || e.target.closest('input, textarea, select')) return;
+  if (e.key === 'Enter'){ e.preventDefault(); guardarRevision(); }
+  if (e.key === 'ArrowRight'){ const b = document.querySelector('[data-act=revsaltar]'); if (b) b.click(); }
 });
 $('#scrim').addEventListener('click', () => cerrarHoja());
 ['dragover', 'drop'].forEach(t => window.addEventListener(t, e => { if (e.dataTransfer && [...e.dataTransfer.types].includes('Files')) e.preventDefault(); }));
