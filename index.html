@@ -796,21 +796,52 @@ function ordenar(start, pts, coste){
 // ---------- Distancias ANDANDO por calles reales ----------
 // Pedimos a un servicio gratuito de OpenStreetMap (FOSSGIS) una tabla con los minutos
 // andando entre todos los puntos de la ruta. Una sola consulta pequeña por reordenación.
+// ---------- Tiempos andando entre todos los clientes del día ----------
+// El servidor público acepta tablas de unos 100 puntos por lado. Hasta 90 clientes se pide todo de una vez;
+// con más (una ruta real puede pasar de 120 al día) se pide por bloques de 60x60 y se junta la tabla entera.
+const MAX_PUNTOS = 220, BLOQUE = 60, TABLA_URL = 'https://routing.openstreetmap.de/routed-foot/table/v1/foot/';
+const tablasPedidas = new Map();    // lo ya pedido en esta sesión: si cambia poco, no se vuelve a descargar
+async function pedirTabla(url){
+  if (tablasPedidas.has(url)) return tablasPedidas.get(url);
+  const ctrl = new AbortController(), to = setTimeout(() => ctrl.abort(), 15000);
+  try {
+    const r = await fetch(url, {signal:ctrl.signal}), j = await r.json();
+    if (j.code !== 'Ok') throw new Error(j.code);
+    if (tablasPedidas.size > 80) tablasPedidas.clear();
+    tablasPedidas.set(url, j); return j;
+  } finally { clearTimeout(to); }
+}
+async function tablaAndando(all){
+  const n = all.length, xy = p => `${(+p.lng).toFixed(6)},${(+p.lat).toFixed(6)}`;
+  if (n <= 90){
+    const j = await pedirTabla(`${TABLA_URL}${all.map(xy).join(';')}?annotations=duration,distance`);
+    return {dur: j.durations, dis: j.distances};
+  }
+  const dur = Array.from({length:n}, () => new Array(n).fill(null)), dis = Array.from({length:n}, () => new Array(n).fill(null));
+  const seq = (d, h) => Array.from({length:h - d}, (_, i) => d + i).join(';');
+  for (let fi = 0; fi < n; fi += BLOQUE){
+    for (let ci = 0; ci < n; ci += BLOQUE){
+      const A = all.slice(fi, fi + BLOQUE), B = all.slice(ci, ci + BLOQUE);
+      const url = fi === ci
+        ? `${TABLA_URL}${A.map(xy).join(';')}?annotations=duration,distance`
+        : `${TABLA_URL}${A.concat(B).map(xy).join(';')}?annotations=duration,distance&sources=${seq(0, A.length)}&destinations=${seq(A.length, A.length + B.length)}`;
+      const j = await pedirTabla(url);
+      for (let i = 0; i < A.length; i++) for (let k = 0; k < B.length; k++){ dur[fi + i][ci + k] = j.durations[i][k]; dis[fi + i][ci + k] = j.distances[i][k]; }
+    }
+  }
+  return {dur, dis};
+}
 async function prepararMatriz(start){
   const pts = visibles().filter(located);
-  if (pts.length < 2 || pts.length > 90){ S.matriz = null; return false; }
-  const all = (start ? [{id:'__inicio', lat:start.lat, lng:start.lng}] : []).concat(pts.map(c => ({id:c.id, lat:c.lat, lng:c.lng})));
-  const coords = all.map(p => `${(+p.lng).toFixed(6)},${(+p.lat).toFixed(6)}`).join(';');
-  const ctrl = new AbortController(), to = setTimeout(() => ctrl.abort(), 12000);
+  if (pts.length < 2 || pts.length > MAX_PUNTOS){ S.matriz = null; return false; }
+  // el punto de salida va el último: así los bloques de clientes no cambian y se reutilizan
+  const all = pts.map(c => ({id:c.id, lat:c.lat, lng:c.lng})).concat(start ? [{id:'__inicio', lat:start.lat, lng:start.lng}] : []);
   try {
-    const r = await fetch(`https://routing.openstreetmap.de/routed-foot/table/v1/foot/${coords}?annotations=duration,distance`, {signal:ctrl.signal});
-    const j = await r.json();
-    if (j.code !== 'Ok') throw new Error(j.code);
+    const {dur, dis} = await tablaAndando(all);
     const huella = Object.fromEntries(all.map(p => [p.id, `${p.lat},${p.lng}`]));
-    S.matriz = {ids: all.map(p => p.id), dur: j.durations, dis: j.distances, huella};
+    S.matriz = {ids: all.map(p => p.id), dur, dis, huella};
     return true;
   } catch { S.matriz = null; return false; }
-  finally { clearTimeout(to); }
 }
 // Busca en la tabla; si el punto no está o se ha movido el pin, devuelve null
 function tramoAndando(a, b){

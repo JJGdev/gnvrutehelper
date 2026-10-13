@@ -922,7 +922,7 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ico = (id, st) => `<svg class="ico" aria-hidden="true"${st ? ` style="${st}"` : ''}><use href="#i-${id}"/></svg>`;
 const norm = s => String(s ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
-const addrKey = c => norm(`${c.direccion}|${c.poblacion}`);
+const addrKey = c => norm(`${c.direccion}|${c.poblacion}|${c.cp || ''}`);
 const pausa = ms => new Promise(r => setTimeout(r, ms));
 const NOMBRE_DIA = ['', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
 const CORTO = ['', 'L', 'M', 'X', 'J', 'V', 'S', 'D'];
@@ -953,20 +953,63 @@ function tratarError(e){
 }
 
 // ---------- Excel y direcciones (las mismas piezas que la app) ----------
+// ---------- Limpieza de los textos que da Telynet ----------
+// El export trae letras rotas: una vocal o Ñ con acento y la letra que le sigue se funden en un solo
+// carácter raro (CAFETERÍA → CAFETEŔ, BEGOÑA → BEGOс). Aquí se deshace. Las «?» sueltas se arreglan
+// con las palabras más típicas; las que no se reconocen se dejan como están.
+const ACENTUADAS = [0xC1, 0xC9, 0xCD, 0xD3, 0xDA, 0xD1, 0xDC];   // Á É Í Ó Ú Ñ Ü
+function desfundir(cp){
+  const b1 = 0xC0 | (cp >> 6), b2 = 0x80 | (cp & 0x3F);
+  if (!ACENTUADAS.includes(b1)) return null;
+  if (b2 >= 0x81 && b2 <= 0x9A) return String.fromCharCode(b1, b2 - 0x40);   // la letra siguiente (A-Z)
+  if (b2 === 0xA0) return String.fromCharCode(b1) + ' ';                       // o un espacio
+  return null;
+}
+const ARREGLOS = [[/CAF\?(?=\s|$)/g, 'CAFÉ'], [/ER\?A\b/g, 'ERÍA'], [/CI\?N\b/g, 'CIÓN'], [/RINC\?N/g, 'RINCÓN'],
+                  [/PI\?ATA/g, 'PIÑATA'], [/I\?AK\b/g, 'IÑAK']];
+function arreglaTexto(t){
+  let s = String(t ?? '');
+  s = s.replace(/([A-Z])([\u0100-\u07FF])/g, (m, a, ch) => { const d = desfundir(ch.codePointAt(0)); return d ? a + d : m; });
+  ARREGLOS.forEach(([re, to]) => { s = s.replace(re, to); });
+  return s;
+}
+// «LA LIBERTAD ,28 » → «LA LIBERTAD, 28»
+const limpiaDireccion = d => arreglaTexto(d).replace(/\s+/g, ' ').replace(/\s*,\s*/g, ', ').replace(/^[,\s]+|[,\s]+$/g, '').trim();
+// «BARAKALDO (SAN VIC» → «BARAKALDO». Telynet corta la población a 18 letras y le pega el barrio.
+const MUNICIPIOS = [['SAN VICENTE DE BAR', 'BARAKALDO'], ['LUTXANA', 'BARAKALDO'], ['ZORROZA', 'BILBAO']];
+function limpiaPoblacion(p){
+  const s = arreglaTexto(p).replace(/\(.*$/, '').replace(/\s+/g, ' ').trim(), u = s.toUpperCase();
+  for (const [ini, mun] of MUNICIPIOS) if (u.startsWith(ini)) return mun;
+  return s;
+}
+
 // ---------- Direcciones a coordenadas (OpenStreetMap / Nominatim, 1 consulta por segundo) ----------
+// Telynet separa calle y número con una coma («ARRANDI, 28») y a veces trae locales o «S/N».
+// Se prueba con calle + número + código postal; si no sale, sin código postal; y por último solo la calle (aproximado).
+function consultasDireccion(c){
+  const dir = c.direccion || '', i = dir.lastIndexOf(',');
+  let calle = (i >= 0 ? dir.slice(0, i) : dir).replace(/\b(LOC(AL)?|BJ|BAJO|PORTAL|PISO)\b.*$/i, '').trim();
+  const resto = i >= 0 ? dir.slice(i + 1) : '';
+  let num = (resto.match(/^\s*(\d+)/) || [])[1] || '';
+  if (i < 0){ const m = calle.match(/\s(\d+)$/); if (m){ num = m[1]; calle = calle.replace(/\s+\d+$/, ''); } }
+  if (!calle) return [];
+  const q = (...p) => p.filter(Boolean).join(', '), fin = ['Bizkaia', 'España'];
+  const zona = [c.cp, c.poblacion].filter(Boolean).join(' ');
+  return [num && {q: q(`${calle} ${num}`, zona, ...fin), exacto: true},
+          num && c.cp && {q: q(`${calle} ${num}`, c.poblacion, ...fin), exacto: true},
+          {q: q(calle, zona, ...fin), exacto: false}].filter(Boolean);
+}
 async function buscarDireccion(c){
-  const junta = (...p) => p.filter(Boolean).join(', ');
-  const intentos = [junta(c.direccion, c.poblacion, 'Bizkaia', 'España'),
-                    junta(c.direccion.replace(/\s+\d+\w*$/, ''), c.poblacion, 'Bizkaia', 'España')];
+  const intentos = consultasDireccion(c);
   for (let i = 0; i < intentos.length; i++){
     if (i) await pausa(1100);
     try {
-      const r = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=es&accept-language=es&q=' + encodeURIComponent(intentos[i]));
+      const r = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=es&accept-language=es&q=' + encodeURIComponent(intentos[i].q));
       if (!r.ok) continue;
       const j = await r.json();
       if (j[0]){
-        const exacto = ['house','building','amenity','shop'].includes(j[0].addresstype) || j[0].category === 'amenity';
-        return {lat:+j[0].lat, lng:+j[0].lon, geo: (i > 0 || !exacto) ? 'aprox' : 'ok'};
+        const exacto = intentos[i].exacto && (['house','building','amenity','shop'].includes(j[0].addresstype) || j[0].category === 'amenity');
+        return {lat:+j[0].lat, lng:+j[0].lon, geo: exacto ? 'ok' : 'aprox'};
       }
     } catch { return null; }
   }
@@ -1024,13 +1067,15 @@ function mapearColumnas(filas){
   const busca = alias => { for (const a of alias){ const i = cab.indexOf(a); if (i > -1) return i; }
                            for (const a of alias){ const i = cab.findIndex(h => h.startsWith(a)); if (i > -1) return i; } return -1; };
   const col = {
-    codigo: busca(['codigo','codcliente','cliente','cod','id']),
+    codigo: busca(['ncliente','numcliente','numerocliente','nocliente','codigo','codcliente','cliente','cod','id']),
+    ruta: busca(['ruta']),
+    cp: busca(['cp','codigopostal','codpostal','cpostal']),
     nombre: busca(['nombrecomercial','nombre','establecimiento','razonsocial','name']),
     direccion: busca(['direccion','domicilio','calle','address']),
     poblacion: busca(['poblacion','municipio','localidad','ciudad']),
     telefono: busca(['telefono','tlf','tel','movil']),
-    dia: busca(['diavisita','dia','diadevisita']),
-    frecuencia: busca(['frecuenciadevisita','frecuenciavisita','frecuencia','periodicidad','frec']),
+    dia: busca(['diavisita','diadevisita','dv','dia']),
+    frecuencia: busca(['frecuenciadevisita','frecuenciavisita','frecuencia','periodicidad','frec','fre']),
     lat: busca(['latitud','lat','latitude']),
     lng: busca(['longitud','lng','lon','long','longitude'])
   };
@@ -1050,12 +1095,26 @@ function mapearColumnas(filas){
     if (t.startsWith('mensual') || t.includes('4sem') || t.includes('cuatrosem')) return 28;
     return 0;   // no se entiende: se avisa y se trata como semanal
   };
-  return filas.slice(1).map(r => ({
-    codigo: val(r, col.codigo), nombre: val(r, col.nombre), direccion: val(r, col.direccion),
-    poblacion: val(r, col.poblacion), telefono: val(r, col.telefono),
+  const mapeadas = filas.slice(1).map(r => ({
+    codigo: val(r, col.codigo), nombre: arreglaTexto(val(r, col.nombre)), direccion: limpiaDireccion(val(r, col.direccion)),
+    poblacion: limpiaPoblacion(val(r, col.poblacion)), telefono: val(r, col.telefono), cp: val(r, col.cp), ruta: val(r, col.ruta),
     dia_visita: dia(val(r, col.dia)), frecuencia: col.frecuencia < 0 ? null : frecuencia(val(r, col.frecuencia)),
     lat: numero(val(r, col.lat)), lng: numero(val(r, col.lng))
   })).filter(f => f.nombre);
+  return sanearFilas(mapeadas);
+}
+// Un mismo cliente puede visitarse dos días distintos (sale dos veces en el archivo con el mismo número).
+// Se cargan como dos visitas: «1234·1» y «1234·4». Si además coincide el día, se queda una sola.
+function sanearFilas(filas){
+  const veces = {}; filas.forEach(f => { if (f.codigo) veces[f.codigo] = (veces[f.codigo] || 0) + 1; });
+  const vistos = new Set(), salida = []; let repetidos = 0;
+  for (const f of filas){
+    if (f.codigo && veces[f.codigo] > 1){ f.codigoOriginal = f.codigo; f.codigo = `${f.codigo}·${f.dia_visita || 0}`; }
+    if (f.codigo){ if (vistos.has(f.codigo)){ repetidos++; continue; } vistos.add(f.codigo); }
+    salida.push(f);
+  }
+  salida.avisos = {repetidos, dobles: new Set(salida.filter(f => f.codigoOriginal).map(f => f.codigoOriginal)).size};
+  return salida;
 }
 
 
@@ -1302,6 +1361,13 @@ function pintarHoja(){
       const porDia = [1,2,3,4,5,6,7].map(d => [d, im.filas.filter(f => f.dia_visita === d).length]).filter(x => x[1]);
       const porFrec = FRECUENCIAS.map(n => [n, im.filas.filter(f => f.frecuencia === n).length]).filter(x => x[1]);
       const frecMal = im.filas.filter(f => f.frecuencia === 0).length;
+      const av = im.avisos || {}, rutasArchivo = rutasDelArchivo(im), distinta = rutaDistinta(im, h.id);
+      const finde = im.filas.filter(f => f.dia_visita >= 6).length;
+      const aviso = (icono, t) => `<div class="notice" style="margin:0 0 8px">${ico(icono)}<div>${t}</div></div>`;
+      const avisosTxt = (distinta ? aviso('alert', `<b>Este archivo es de la ruta ${esc(rutasArchivo.join(', '))}</b> y lo vas a subir a la ruta <b>${esc(h.id)}</b>. Si te has equivocado, pulsa «Elegir otro archivo».`) : '')
+        + (av.dobles ? aviso('calendar', `${pl(av.dobles, 'cliente se visita', 'clientes se visitan')} dos días distintos. Se cargan como dos visitas, por ejemplo «1234·1» y «1234·4».`) : '')
+        + (av.repetidos ? aviso('alert', `${pl(av.repetidos, 'fila repetida', 'filas repetidas')} (mismo cliente y mismo día): se ha dejado una sola.`) : '')
+        + (finde ? aviso('calendar', `${pl(finde, 'cliente tiene', 'clientes tienen')} visita en sábado o domingo. Si es un error del archivo, corrígelo después en su ficha.`) : '');
       const frecTxt = im.filas.every(f => f.frecuencia === null)
         ? `<p class="hint" style="margin:0 0 8px">El archivo no trae frecuencia de visita: los clientes nuevos serán semanales y los que ya estaban mantienen la suya.</p>`
         : `<p class="hint" style="margin:0 0 8px">Por frecuencia: ${porFrec.map(([n, k]) => `${NOMBRE_FREC[n].toLowerCase()} ${k}`).join(' · ')}</p>`
@@ -1310,6 +1376,7 @@ function pintarHoja(){
       <div class="resumen"><div><b class="num">${im.filas.length}</b><span>clientes</span></div><div><b class="num">${im.filas.length - sinSitio}</b><span>ubicados</span></div>
         <div><b class="num ${sinSitio ? 'warn' : ''}">${sinSitio}</b><span>sin ubicar</span></div></div>
       ${porDia.length ? `<p class="hint" style="margin:0 0 8px">Por día: ${porDia.map(([d, n]) => `${NOMBRE_DIA[d]} ${n}`).join(' · ')}</p>` : `<div class="notice" style="margin:0 0 8px">${ico('calendar')}<div>El archivo no trae día de visita: el comercial verá todos los clientes juntos.</div></div>`}
+      ${avisosTxt}
       ${frecTxt}
       ${sinSitio ? `<p class="hint" style="margin:0 0 8px">${pl(sinSitio, 'dirección no encontrada', 'direcciones no encontradas')}. Se cargan igualmente y podréis colocarlas en el mapa.</p>` : ''}
       ${r && r.clientes ? `<p class="hint" style="margin:0 0 8px">Ahora la ruta tiene ${r.clientes} clientes. Los que no vengan en este archivo quedarán dados de baja.</p>` : ''}
@@ -1366,13 +1433,16 @@ async function leerYUbicar(file){
   try {
     const filas = await leerArchivo(file);
     if (im.pob) filas.forEach(f => { if (!f.poblacion) f.poblacion = im.pob.trim(); });
-    im.filas = filas; im.trabajando = true; im.paso = 'Buscando direcciones…'; pintarHoja();
+    im.avisos = filas.avisos || {}; im.filas = filas; im.trabajando = true; im.paso = 'Buscando direcciones…'; pintarHoja();
     await ubicar(filas, (i, n, nombre) => { im.pct = i/n; im.detalle = `${i} de ${n} · ${nombre}`; pintarHoja(); });
     im.trabajando = false; pintarHoja();
   } catch (err){ ui.imp = {error: (err.message || 'No he podido leer el archivo') + '. Revisa que la primera fila tenga los títulos.', pob: im.pob}; pintarHoja(); }
 }
+const rutasDelArchivo = im => [...new Set((im.filas || []).map(f => f.ruta).filter(Boolean).map(r => String(r).toUpperCase()))];
+const rutaDistinta = (im, codigo) => { const r = rutasDelArchivo(im); return r.length > 0 && !(r.length === 1 && r[0] === String(codigo).toUpperCase()); };
 async function subir(){
   const im = ui.imp, codigo = ui.hoja.id;
+  if (rutaDistinta(im, codigo) && !confirm(`El archivo es de la ruta ${rutasDelArchivo(im).join(', ')} y vas a subirlo a la ruta ${codigo}. ¿Seguro?`)) return;
   im.trabajando = true; im.paso = 'Subiendo a la ruta…'; im.detalle = ''; im.pct = 1; pintarHoja();
   try {
     im.resultado = await rpc('oficina_importar', {p_token: TOKEN, p_codigo: codigo, p_archivo: im.archivo || '', p_clientes: im.filas.map(f => ({
